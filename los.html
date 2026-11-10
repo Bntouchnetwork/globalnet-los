@@ -837,6 +837,12 @@ select { text-overflow: ellipsis; }
 /* Compliance AI: operational status light (not a certification) */
 .cai-light{width:18px;height:18px;border-radius:50%;flex:none;box-shadow:0 0 0 4px color-mix(in srgb,currentColor 18%,transparent)}
 .cai-light.green{background:#1f9d55;color:#1f9d55}.cai-light.yellow{background:#d69e2e;color:#d69e2e}.cai-light.red{background:#c53030;color:#c53030}
+/* Lender Intelligence cards */
+.licards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.licard{display:flex;flex-direction:column;gap:8px;margin:0}
+.licard h3{margin:0}
+.licard .row{flex-wrap:wrap;gap:6px}
+@media (max-width:600px){.licards{grid-template-columns:1fr}}
 </style>
 
 <div class="theme-toggle" role="group" aria-label="Color mode">
@@ -7484,6 +7490,137 @@ document.addEventListener('click', async (e) => {
       return rcDo('cmp_set_staff', { p_user: rows[0].user_id, p_role: rcVal('st-r'), p_active: true }, 'Added to compliance staff', drops); } catch (err) { return toast(err.message); } }
 });
 document.addEventListener('change', (e) => { const d = e.target.dataset || {}; if (d.pcorg) { S.pcompOrg = e.target.value; keepScroll(render); } });
+
+// ================================================================ Lender List › Lender Intelligence (Phase 1)
+// Structured lender profiles with programs, sources and verification dates; the 11-step broker relationship status with history;
+// AI research whose findings are suggestions a broker admin accepts or rejects; product coverage. Data lives in li_* (database).
+// The existing Lender List page stays as the first tab and keeps working as before.
+const LI_ST = [['discovered', 'Discovered'], ['under_review', 'Under Review'], ['signup_requested', 'Sign-Up Requested'], ['awaiting_lender_response', 'Awaiting Lender Response'], ['package_in_progress', 'Package In Progress'],
+  ['pending_admin_approval', 'Pending Admin Approval'], ['submitted_to_lender', 'Submitted to Lender'], ['pending_lender_approval', 'Pending Lender Approval'], ['approved_active', 'Approved / Active'], ['declined', 'Declined'], ['suspended_inactive', 'Suspended / Inactive']];
+const LI_STN = Object.fromEntries(LI_ST);
+const LI_STP = { discovered: 'info', under_review: 'info', signup_requested: 'acc', awaiting_lender_response: 'acc', package_in_progress: 'acc', pending_admin_approval: 'warn', submitted_to_lender: 'acc', pending_lender_approval: 'warn', approved_active: 'ok', declined: 'bad', suspended_inactive: '' };
+const LI_CAT = [['agency_qm', 'Conventional / Agency QM'], ['fha', 'FHA'], ['va', 'VA'], ['usda', 'USDA'], ['jumbo', 'Jumbo'], ['non_qm', 'Non-QM'], ['dscr', 'DSCR'], ['bank_statement', 'Bank Statement'], ['pnl', 'P&L'],
+  ['itin', 'ITIN'], ['foreign_national', 'Foreign National'], ['asset_utilization', 'Asset Utilization'], ['commercial', 'Commercial'], ['bridge', 'Bridge'], ['private_money', 'Private Money'], ['fix_flip', 'Fix & Flip'],
+  ['construction', 'Ground-Up Construction'], ['land', 'Land & Development'], ['mini_correspondent', 'Mini-Correspondent'], ['correspondent', 'Correspondent'], ['heloc', 'HELOC'], ['other', 'Other']];
+const LI_CATN = Object.fromEntries(LI_CAT);
+const LI_VERP = { verified: 'ok', partially_verified: 'acc', inferred: 'warn', unverified: 'warn', conflicting: 'bad', outdated: 'bad' };
+const liVer = (v) => `<span class="pill ${LI_VERP[v] || ''}" title="${v === 'inferred' ? 'Found in a source that is not the lender\'s own site — confirm before relying on it' : v === 'unverified' ? 'No source yet' : ''}">${esc(rcLbl(v))}</span>`;
+const liCats = (arr) => (arr || []).map((c) => `<span class="pill">${esc(LI_CATN[c] || rcLbl(c))}</span>`).join(' ');
+
+{ const vl = V.lenderlist; V.lenderlist = () => {
+  const t = S.liTab || 'list'; const live = rcLive();
+  const tabs = `<nav class="tabs" role="tablist">${[['list', 'Lenders'], ['intel', 'Lender Intelligence'], ['discovery', 'AI discovery'], ['coverage', 'Product coverage']].map(([k, n]) => `<button role="tab" class="${t === k ? 'on' : ''}" aria-selected="${t === k}" data-litab="${k}">${n}</button>`).join('')}</nav>`;
+  if (t === 'list') return tabs + vl();
+  const top = `<div class="top"><div><h1>Lender List</h1><p class="muted">Lender Intelligence: programs, guidelines, coverage and broker approval status — every fact with its source and verification date.</p></div></div>`;
+  if (!live) return tabs + top + rcOffline('Lender Intelligence');
+  // first visit: bring the lenders already on the page into the database (no duplicates)
+  if (!RC.liSynced && role === 'admin') { RC.liSynced = true; rcRpc('li_sync_from_list', { p_org: rcOrg(), p_lenders: (S.cfg.lenders || []).map((x) => ({ name: x.name, code: x.code, status: x.status, channel: x.channel, tpoUrl: x.tpoUrl, website: x.website, tpoId: x.tpoId, mloVisible: x.mloVisible, contacts: llContacts(x) })) })
+    .then((n) => { if (n) { rcDrop('lidash'); toast(`${n} lender(s) from your list added to Lender Intelligence`); keepScroll(render); } }).catch(() => { RC.liSynced = false; }); }
+  const key = 'lidash'; const D = rcGet(key, () => rcRpc('li_dashboard', { p_org: rcOrg() }));
+  if (!D) return tabs + top + `<div class="card">${rcLoading(key)}</div>`;
+  let body = '';
+  if (S.liLender) body = liDetailHTML(S.liLender);
+  else if (t === 'intel') {
+    const F = S.liF || (S.liF = { q: '', cat: '', st: '', state: '', ver: '' }); const all = D.lenders || [];
+    const rows = all.filter((x) => (!F.q || `${x.name} ${x.short_code || ''} ${x.website || ''}`.toLowerCase().includes(F.q.toLowerCase())) && (!F.cat || (x.categories || []).includes(F.cat) || (x.program_categories || []).includes(F.cat))
+      && (!F.st || x.status === F.st) && (!F.state || (x.states || []).includes(F.state) || (x.states || []).includes('ALL')) && (!F.ver || x.data_quality === F.ver || (F.ver === 'stale' && x.stale)));
+    body = `<div class="card llfilters"><input data-lif="q" placeholder="Search lender or website" value="${esc(F.q)}" aria-label="Search lenders">
+        <select data-lif="cat" aria-label="Product"><option value="">All products</option>${LI_CAT.map(([k, n]) => `<option value="${k}" ${F.cat === k ? 'selected' : ''}>${n}</option>`).join('')}</select>
+        <select data-lif="st" aria-label="Status"><option value="">All statuses</option>${LI_ST.map(([k, n]) => `<option value="${k}" ${F.st === k ? 'selected' : ''}>${n}</option>`).join('')}</select>
+        <input data-lif="state" maxlength="2" placeholder="State" value="${esc(F.state)}" style="width:70px" aria-label="State">
+        <select data-lif="ver" aria-label="Verification"><option value="">Any verification</option>${[['verified', 'Verified'], ['partially_verified', 'Partially verified'], ['unverified', 'Unverified'], ['stale', 'Not verified in 180 days']].map(([k, n]) => `<option value="${k}" ${F.ver === k ? 'selected' : ''}>${n}</option>`).join('')}</select>
+        <span class="muted small">${rows.length} of ${all.length}</span>${D.is_admin ? '<button class="btn sm" data-linew="1">＋ Add lender</button>' : ''}</div>
+      ${S.liNew ? liFormHTML(null) : ''}
+      <div class="licards">${rows.map((x) => `<div class="card licard"><div class="spread"><div><h3>${esc(x.name)}${x.short_code ? ` <span class="muted small">(${esc(x.short_code)})</span>` : ''}</h3><div class="small muted">${esc(rcLbl(x.channel))}${x.nmls_id ? ' · NMLS ' + esc(x.nmls_id) : ''}${x.website ? ` · <a href="${esc(x.website)}" target="_blank" rel="noopener noreferrer">${esc(x.website_domain || x.website)}</a>` : ''}</div></div>${rcPill(x.status, LI_STP).replace(esc(rcLbl(x.status)), esc(LI_STN[x.status]))}</div>
+          <div class="small">${liCats([...new Set([...(x.categories || []), ...(x.program_categories || [])])]) || '<span class="muted">Products not recorded yet</span>'}</div>
+          <div class="small"><b>States:</b> ${(x.states || []).length ? esc(x.states.join(', ')) : '<span class="muted">not recorded</span>'} · <b>Portal:</b> ${x.portal_url ? 'yes' : '<span class="muted">not recorded</span>'} · <b>Programs:</b> ${x.programs} · <b>Loans:</b> ${x.loans}</div>
+          <div class="small">${liVer(x.data_quality)} <span class="muted">Last verified: ${x.last_verified_at ? rcD(x.last_verified_at) : 'never'}</span>${x.stale && x.last_verified_at ? ' <span class="pill warn">Older than 180 days</span>' : ''}${x.pending_suggestions ? ` <span class="pill acc">${x.pending_suggestions} AI update(s)</span>` : ''}</div>
+          <div class="row">
+            <button class="btn sm" data-liopen="${x.id}|programs">View Programs</button>
+            ${D.is_admin ? `<button class="btn sm" data-lisignup="${x.id}" ${['discovered', 'under_review', 'declined'].includes(x.status) ? '' : 'disabled title="Already in the broker onboarding workflow or approved"'}>Request Broker Sign-Up</button>` : ''}
+            <button class="btn sm" data-liopen="${x.id}|package">View Broker Package</button>
+            ${x.portal_url ? `<a class="btn sm" href="${esc(x.portal_url)}" target="_blank" rel="noopener noreferrer">Open TPO Portal ↗</a>` : '<button class="btn sm" disabled title="Portal URL not recorded">Open TPO Portal</button>'}
+            <button class="btn sm" data-liopen="${x.id}|loans">View Loans</button>
+            ${D.is_admin ? `<button class="btn sm" data-lirefresh="${x.id}">Refresh Information</button>` : ''}</div></div>`).join('') || '<p class="muted">No lenders match.</p>'}</div>`;
+  } else if (t === 'discovery') {
+    const sg = D.suggestions || []; const runs = D.runs || []; const P = S.liDisc || (S.liDisc = { cats: {} });
+    body = `${D.is_admin ? `<div class="card"><h2>Ask the AI to discover lenders</h2><p class="muted small">The agent searches public sources (lenders' own wholesale pages first) and returns suggestions. Nothing is added until you accept it; nothing is ever marked approved by the AI. Lenders already on your list are not duplicated.</p>
+        <div class="row" style="flex-wrap:wrap">${LI_CAT.filter(([k]) => k !== 'other').map(([k, n]) => `<label class="ck small"><input type="checkbox" data-lidcat="${k}" ${P.cats[k] ? 'checked' : ''}> ${n}</label>`).join('')}</div>
+        <div class="row"><label class="small">States<input id="lid-st" value="${esc(P.states || 'FL')}" style="width:120px"></label><button class="btn pri sm" data-lidiscover="1">Start discovery</button></div>
+        <p class="muted small">The research agent runs in the background service and needs the AI key; until then requests wait in the queue below.</p></div>` : ''}
+      <div class="card"><h2>Suggestions to review (${sg.length})</h2>${sg.map((s) => { const p = s.payload || {}; return `<div class="card sub"><div class="spread"><div><b>${esc(s.title)}</b> <span class="pill">${esc(rcLbl(s.kind))}</span> ${liVer(s.verification)}</div><span class="muted small">${rcDT(s.created_at)}</span></div>
+          ${s.kind === 'new_lender' ? `<div class="small">${liCats(p.categories)} ${p.website ? ` · <a href="${esc(p.website)}" target="_blank" rel="noopener noreferrer">${esc(p.website)}</a>` : ''}${p.nmls_id ? ' · NMLS ' + esc(p.nmls_id) : ''}${(p.states || []).length ? ' · States: ' + esc(p.states.join(', ')) : ''}</div>${(p.programs || []).length ? `<div class="small muted">${p.programs.length} program(s): ${esc(p.programs.map((g) => g.name).join(', '))}</div>` : ''}` : ''}
+          ${['program_change', 'conflict'].includes(s.kind) ? `<div class="small">Now: FICO ${esc(p.current?.min_fico ?? '—')} · LTV ${esc(p.current?.max_ltv ?? '—')} · DSCR ${esc(p.current?.min_dscr ?? '—')} · min ${p.current?.min_loan != null ? usd(+p.current.min_loan) : '—'} → Proposed: FICO ${esc(p.proposed?.min_fico ?? '—')} · LTV ${esc(p.proposed?.max_ltv ?? '—')} · DSCR ${esc(p.proposed?.min_dscr ?? '—')} · min ${p.proposed?.min_loan != null ? usd(+p.proposed.min_loan) : '—'}</div>` : ''}
+          <div class="small">${(s.sources || []).map((u) => `<a href="${esc(u.url)}" target="_blank" rel="noopener noreferrer">${esc(u.title || u.url)}</a>`).join(' · ') || '<span class="pill warn">No source</span>'}</div>
+          ${D.is_admin ? `<div class="row"><input id="lis-n-${s.id}" placeholder="Note" style="min-width:200px"><button class="btn sm pri" data-lisug="${s.id}|accepted">${s.kind === 'opportunity' ? 'Noted' : 'Accept'}</button><button class="btn sm" data-lisug="${s.id}|rejected">Reject</button></div>` : ''}</div>`; }).join('') || '<p class="muted small">Nothing waiting.</p>'}</div>
+      <div class="card"><h2>Research tasks</h2><div class="tw"><table><thead><tr><th>When</th><th>Type</th><th>Lender / products</th><th>Status</th><th>Result</th></tr></thead><tbody>${runs.map((r) => `<tr><td class="small">${rcDT(r.created_at)}${r.scheduled ? ' <span class="pill">scheduled</span>' : ''}</td><td>${esc(rcLbl(r.mode))}</td><td class="small">${esc(r.lender || (r.categories || []).map((c) => LI_CATN[c] || c).join(', ') || 'All')}</td><td>${esc(rcLbl(r.status))}</td><td class="small">${r.summary ? `${r.summary.suggestions || 0} suggestion(s), ${r.summary.conflicts_or_changes || 0} change(s)` : esc(r.error || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No research yet.</td></tr>'}</tbody></table></div></div>`;
+  } else {
+    const C = D.coverage || {};
+    body = `<div class="card"><h2>GlobalNet product coverage</h2><p class="muted small">Products GlobalNet wants to originate and how many approved lenders cover each (from lender categories and verified programs). Gaps are where AI discovery looks for new lenders.</p>
+      <div class="tw"><table><thead><tr><th>Product</th><th class="num">Approved lenders</th><th class="num">In onboarding / review</th><th></th></tr></thead><tbody>${(D.targets || []).map((t2) => { const c = C[t2] || {}; return `<tr><td><b>${esc(LI_CATN[t2] || t2)}</b></td><td class="num">${c.approved || 0}</td><td class="num">${c.pipeline || 0}</td><td>${(c.approved || 0) === 0 ? '<span class="pill bad">Gap</span>' : (c.approved || 0) < 2 ? '<span class="pill warn">Only one lender</span>' : '<span class="pill ok">Covered</span>'}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+  }
+  return tabs + top + body;
+}; }
+
+function liFormHTML(x) {
+  return `<div class="card sub"><h3>${x ? 'Edit lender' : 'Add a lender'}</h3><div class="fg"><label>Name<input id="lf-n" value="${esc(x?.name || '')}"></label><label>Short name<input id="lf-c" value="${esc(x?.short_code || '')}"></label>
+    <label>Channel<select id="lf-ch">${['wholesale', 'correspondent', 'mini_correspondent', 'non_delegated_correspondent', 'private_money', 'other'].map((k) => `<option value="${k}" ${(x?.channel || 'wholesale') === k ? 'selected' : ''}>${rcLbl(k)}</option>`).join('')}</select></label>
+    <label>Website<input id="lf-w" value="${esc(x?.website || '')}"></label><label>NMLS<input id="lf-nm" value="${esc(x?.nmls_id || '')}"></label><label>Minimum loan<input id="lf-ml" inputmode="decimal" value="${esc(x?.min_loan_amount ?? '')}"></label>
+    <label style="grid-column:span 2">Broker registration page<input id="lf-r" value="${esc(x?.tpo_registration_url || '')}"></label><label>TPO portal URL<input id="lf-p" value="${esc(x?.portal_url || '')}"></label>
+    <label style="grid-column:span 2">Products<span class="row" style="flex-wrap:wrap">${LI_CAT.map(([k, n]) => `<label class="ck small"><input type="checkbox" data-lfcat="${k}" ${(x?.categories || []).includes(k) ? 'checked' : ''}> ${n}</label>`).join('')}</span></label>
+    <label>Eligible states (comma, or ALL)<input id="lf-s" value="${esc((x?.states || []).join(', '))}"></label><label style="grid-column:span 3">Notes<input id="lf-no" value="${esc(x?.notes || '')}"></label></div>
+    <div class="row"><button class="btn pri sm" data-lisave="${x ? x.id : ''}">Save</button><button class="btn sm" data-licancel="1">Cancel</button></div>
+    <p class="muted small">Only enter what you have confirmed. Anything entered by hand stays "unverified" until a program or document with its source is verified.</p></div>`;
+}
+
+function liDetailHTML(id) {
+  const key = 'lidet:' + id; const d = rcGet(key, () => rcRpc('li_lender_detail', { p_lender: id }));
+  if (!d) return `<div class="card">${rcLoading(key)}</div>`;
+  const x = d.lender; const sec = S.liSec || 'programs'; const adm = d.is_admin; const br = x.broker_requirements || {};
+  const tabs = `<nav class="tabs" role="tablist">${[['programs', 'Programs & guidelines'], ['package', 'Broker requirements & package'], ['status', 'Status & history'], ['loans', `Loans (${(d.loans || []).length})`], ['profile', 'Profile']].map(([k, n]) => `<button role="tab" class="${sec === k ? 'on' : ''}" data-lisec="${k}">${n}</button>`).join('')}</nav>`;
+  let b = '';
+  if (sec === 'programs') b = `<div class="tw"><table><thead><tr><th>Program</th><th>Product</th><th class="num">Min FICO</th><th class="num">Max LTV / CLTV</th><th class="num">Min DSCR</th><th class="num">Reserves</th><th class="num">Loan range</th><th>Occupancy · property · borrowers</th><th>Source</th><th></th></tr></thead><tbody>
+      ${(d.programs || []).map((p) => `<tr><td><b>${esc(p.name)}</b>${p.description ? `<div class="small muted">${esc(p.description)}</div>` : ''}${p.status === 'discontinued' ? ' <span class="pill">Discontinued</span>' : ''}</td><td>${esc(LI_CATN[p.category] || p.category)}</td><td class="num">${p.min_fico ?? '—'}</td><td class="num">${p.max_ltv ?? '—'} / ${p.max_cltv ?? '—'}</td><td class="num">${p.min_dscr ?? '—'}</td><td class="num">${p.reserves_months ?? '—'}</td>
+        <td class="num small">${p.min_loan != null ? usd(+p.min_loan) : '—'} – ${p.max_loan != null ? usd(+p.max_loan) : '—'}</td><td class="small">${esc([...(p.occupancy || []), ...(p.property_types || []), ...(p.borrower_types || [])].join(', ') || '—')}</td>
+        <td class="small">${liVer(p.verification)}${p.source_url ? `<div><a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer">source</a> · ${rcD(p.verified_at)}</div>` : ''}${p.guidelines_url ? `<div><a href="${esc(p.guidelines_url)}" target="_blank" rel="noopener noreferrer">guidelines</a></div>` : ''}</td>
+        <td>${adm && p.verification !== 'verified' ? `<span class="row"><input id="lpv-${p.id}" placeholder="Guideline link / document" style="width:150px"><button class="btn sm" data-liverify="${p.id}">Mark verified</button></span>` : ''}</td></tr>`).join('') || '<tr><td colspan="10" class="muted">No programs recorded. Use Refresh Information to research them, or add them from the lender\'s guidelines.</td></tr>'}</tbody></table></div>
+      <p class="muted small">A program match is information, not an underwriting approval. Rates and pricing stay on the lender's rate sheet.</p>`;
+  else if (sec === 'package') b = `<h3>Broker eligibility and licensing requirements</h3>${Object.keys(br).length ? `<div class="tw"><table><thead><tr><th>Requirement</th><th>Value</th><th>Verification</th><th>Source</th></tr></thead><tbody>${Object.entries(br).map(([k, v]) => `<tr><td>${esc(rcLbl(k))}</td><td class="small">${esc(typeof v === 'object' ? (v.value ?? JSON.stringify(v)) : v)}</td><td>${liVer(v?.verification || 'unverified')}</td><td class="small">${v?.source_url ? `<a href="${esc(v.source_url)}" target="_blank" rel="noopener noreferrer">source</a>` : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small">Not recorded yet.</p>'}
+      <p class="small">${x.tpo_registration_url ? `Registration: <a href="${esc(x.tpo_registration_url)}" target="_blank" rel="noopener noreferrer">${esc(x.tpo_registration_url)}</a>` : 'Registration page not recorded.'}${x.integrations?.comergence ? ' · Uses Comergence' : ''}</p>
+      <div class="note info small"><b>Broker package:</b> the sign-up package (lender forms, prepopulated answers from GlobalNet's verified corporate records, attached documents and admin approval) is Phase 2. Nothing is sent to a lender without a broker admin's approval.</div>`;
+  else if (sec === 'status') b = `${adm ? `<div class="fg"><label>New status<select id="li-ns">${LI_ST.map(([k, n]) => `<option value="${k}" ${x.status === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label><label style="grid-column:span 2">Reason (required)<input id="li-nr"></label>
+        <label style="grid-column:span 2">Approval evidence (required for Approved / Active: approval email, letter or portal confirmation)<input id="li-ne"></label><label>Broker / TPO ID from the lender<input id="li-nb" value="${esc(x.broker_id || '')}"></label></div>
+      <button class="btn sm pri" data-listatus="${x.id}">Change status</button>` : ''}
+      <div class="tw"><table><thead><tr><th>When</th><th>From</th><th>To</th><th>Reason</th><th>By</th></tr></thead><tbody>${(d.history || []).map((h) => `<tr><td class="small">${rcDT(h.changed_at)}</td><td>${esc(LI_STN[h.from_status] || '—')}</td><td>${rcPill(h.to_status, LI_STP).replace(esc(rcLbl(h.to_status)), esc(LI_STN[h.to_status]))}</td><td class="small">${esc(h.reason || '')}${h.evidence?.reference ? `<div class="muted">Evidence: ${esc(h.evidence.reference)}</div>` : ''}</td><td class="small">${esc(h.by || rcLbl(h.actor))}</td></tr>`).join('')}</tbody></table></div>`;
+  else if (sec === 'loans') b = `<div class="tw"><table><thead><tr><th>Loan</th><th>Milestone</th><th>Program</th><th class="num">Amount</th></tr></thead><tbody>${(d.loans || []).map((l) => `<tr><td><button class="link" data-open="${esc(l.loan_number)}">${esc(l.loan_number)}</button></td><td>${esc(rcLbl(l.milestone))}</td><td>${esc(rcLbl(l.program))}</td><td class="num">${l.amount != null ? usd(+l.amount) : '—'}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No loans with this lender.</td></tr>'}</tbody></table></div>`;
+  else b = adm ? liFormHTML(x) + `<h3>Account executives</h3><p class="small">${(x.ae_contacts || []).map((c) => `${esc(c.name || '')} ${c.email ? '· ' + esc(c.email) : ''} ${c.phone ? '· ' + esc(c.phone) : ''}`).join('<br>') || '<span class="muted">Edit contacts on the Lenders tab.</span>'}</p>` : '<p class="muted">Only a broker admin edits lender profiles.</p>';
+  return `<div class="card"><div class="spread"><div><p class="muted small"><button class="link" data-liopen="">← All lenders</button></p><h2>${esc(x.name)}</h2><p class="small">${rcPill(x.status, LI_STP).replace(esc(rcLbl(x.status)), esc(LI_STN[x.status]))} ${liVer(x.data_quality)} <span class="muted">${x.website ? esc(x.website_domain || x.website) + ' · ' : ''}Last verified ${x.last_verified_at ? rcD(x.last_verified_at) : 'never'} · ${esc(rcLbl(x.origin))}</span></p></div>
+    <span class="row">${x.portal_url ? `<a class="btn sm" href="${esc(x.portal_url)}" target="_blank" rel="noopener noreferrer">Open TPO Portal ↗</a>` : ''}${adm ? `<button class="btn sm" data-lirefresh="${x.id}">Refresh Information</button>` : ''}</span></div>${tabs}${b}</div>`;
+}
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-litab],[data-liopen],[data-lisec],[data-lisignup],[data-lirefresh],[data-linew],[data-licancel],[data-lisave],[data-listatus],[data-liverify],[data-lisug],[data-lidiscover]'); if (!b) return; const d = b.dataset; const drops = ['lidash', 'lidet:'];
+  if (d.litab) { S.liTab = d.litab; S.liLender = null; return keepScroll(render); }
+  if (d.liopen !== undefined) { const [id, sec] = (d.liopen || '').split('|'); S.liLender = id || null; if (sec) S.liSec = sec; if (id) delete RC.cache['lidet:' + id]; return keepScroll(render); }
+  if (d.lisec) { S.liSec = d.lisec; return keepScroll(render); }
+  if (d.linew) { S.liNew = !S.liNew; return keepScroll(render); }
+  if (d.licancel) { S.liNew = false; if (S.liSec === 'profile') S.liSec = 'programs'; return keepScroll(render); }
+  if (d.lisignup) return rcDo('li_set_status', { p_lender: d.lisignup, p_status: 'signup_requested', p_reason: 'Broker sign-up requested by a broker admin', p_evidence: null }, 'Sign-up requested — the registration workflow (email draft, package, approval) is Phase 2', drops);
+  if (d.lirefresh) return rcDo('li_request_research', { p_org: rcOrg(), p_lender: d.lirefresh, p_mode: 'refresh', p_categories: [], p_states: [] }, 'Research task queued — results come back as suggestions to review', drops);
+  if (d.lidiscover) { const cats = [...document.querySelectorAll('[data-lidcat]')].filter((x) => x.checked).map((x) => x.dataset.lidcat); const st = rcVal('lid-st').split(/[\s,]+/).filter(Boolean).map((s) => s.toUpperCase());
+    S.liDisc = { cats: Object.fromEntries(cats.map((c) => [c, 1])), states: st.join(', ') };
+    return rcDo('li_request_research', { p_org: rcOrg(), p_lender: null, p_mode: 'discover', p_categories: cats, p_states: st }, 'Discovery queued', drops); }
+  if (d.lisave !== undefined) { const cats = [...document.querySelectorAll('[data-lfcat]')].filter((x) => x.checked).map((x) => x.dataset.lfcat);
+    const p = { id: d.lisave || null, name: rcVal('lf-n'), short_code: rcVal('lf-c') || null, channel: rcVal('lf-ch'), website: rcVal('lf-w') || null, nmls_id: rcVal('lf-nm') || null, min_loan_amount: rcNum(rcVal('lf-ml')),
+      tpo_registration_url: rcVal('lf-r') || null, portal_url: rcVal('lf-p') || null, categories: cats, states: rcVal('lf-s').split(/[\s,]+/).filter(Boolean).map((s) => s.toUpperCase()), notes: rcVal('lf-no') || null };
+    const r = await rcDo('li_save_lender', { p_org: rcOrg(), p }, 'Lender saved', drops); if (r) { S.liNew = false; keepScroll(render); } return; }
+  if (d.listatus) { const st = rcVal('li-ns'); const ev = rcVal('li-ne'); const bid = rcVal('li-nb');
+    return rcDo('li_set_status', { p_lender: d.listatus, p_status: st, p_reason: rcVal('li-nr'), p_evidence: ev || bid ? { reference: ev || null, broker_id: bid || null } : null }, 'Status: ' + LI_STN[st], drops); }
+  if (d.liverify) return rcDo('li_verify_program', { p_program: d.liverify, p_source_url: rcVal('lpv-' + d.liverify), p_note: null }, 'Program marked verified', drops);
+  if (d.lisug) { const [id, dec] = d.lisug.split('|'); return rcDo('li_decide', { p_id: id, p_decision: dec, p_note: rcVal('lis-n-' + id) || null }, dec === 'accepted' ? 'Accepted' : 'Rejected', drops); }
+});
+document.addEventListener('change', (e) => { const d = e.target.dataset || {}; if (d.lif && d.lif !== 'q' && d.lif !== 'state') { S.liF[d.lif] = e.target.value; keepScroll(render); } });
+document.addEventListener('input', (e) => { const d = e.target.dataset || {}; if (d.lif === 'q' || d.lif === 'state') { S.liF[d.lif] = d.lif === 'state' ? e.target.value.toUpperCase() : e.target.value; clearTimeout(RC.lit); RC.lit = setTimeout(() => { keepScroll(render); const el = document.querySelector(`[data-lif="${d.lif}"]`); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 350); } });
 
 // ================================================================ Layout: side menu only (no top menu), fixed side menu, dashboard that fits the screen
 // On a computer screen (wider than 1100px) the top menu links are hidden — the side menu has the same pages — and the
