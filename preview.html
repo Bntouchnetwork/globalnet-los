@@ -795,6 +795,11 @@ select { text-overflow: ellipsis; }
   .rail .nav .sec { line-height: 1.2; }
   .rail .nav button { padding-block: clamp(1px, calc((100vh - 600px) / 44), 8px); font-size: clamp(.8rem, calc(.45rem + .55vh), .95rem); }
   .rail .nav .sec { padding: clamp(4px, calc((100vh - 600px) / 40), 12px) 10px 2px; }
+  /* loan file menu has ~23 entries: tighter rows, and a quiet scroll only if the window is too short to fit them */
+  .rail .nav:has([data-lgo]) { overflow-y: auto; scrollbar-width: none; }
+  .rail .nav:has([data-lgo])::-webkit-scrollbar { display: none; }
+  .rail .nav:has([data-lgo]) button { padding-block: clamp(1px, calc((100vh - 760px) / 46), 6px); font-size: clamp(.76rem, calc(.36rem + .5vh), .9rem); }
+  .rail .nav:has([data-lgo]) button svg { width: 16px; height: 16px; }
   .rail .foot { padding: 8px 4px 0; gap: 6px; flex-direction: row; flex-wrap: wrap; }
   .rail .foot label { flex: 1 1 100%; }
   .rail .foot .btn { flex: 1 1 0; width: auto; min-width: 0; padding-inline: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -6844,6 +6849,391 @@ document.addEventListener('change', (e) => { const d = e.target.dataset || {};
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-mcrxml],[data-mcrcsv]'); if (!b) return; const M = S.mcr; const C = mcrCompute(M.y, M.q, M.st);
   if (b.dataset.mcrxml) { mcrDownload(`MCR-RMLA-${M.y}-Q${M.q}${M.st ? '-' + M.st : ''}-DRAFT.xml`, mcrXML(M.y, M.q, C), 'application/xml'); return toast('MCR draft file ready — review before uploading to NMLS'); }
   mcrDownload(`MCR-RMLA-${M.y}-Q${M.q}${M.st ? '-' + M.st : ''}.csv`, mcrCSV(M.y, M.q, C), 'text/csv'); });
+
+// ================================================================ Broker compliance (TRID) and NMLS Mortgage Call Report — live screens
+// Everything here reads and writes through the database functions (bc_* and mcr_*). The database decides deadlines,
+// classifications and statuses and keeps the tamper-evident audit trail; these screens only show and collect.
+// In the offline preview (no database) the screens explain that they need the live LOS.
+const RC = { cache: {}, busy: {}, err: {}, open: {} };
+const rcLive = () => !!(window.GN_LIVE && window.GN_LIVE.sb && window.GN_LIVE.orgId);
+const rcOrg = () => window.GN_LIVE.orgId;
+async function rcRpc(fn, args) { const { data, error } = await window.GN_LIVE.sb.rpc(fn, args); if (error) throw new Error(error.message); return data; }
+async function rcSel(table, q) { let r = window.GN_LIVE.sb.from(table).select(q.cols || '*'); if (q.eq) for (const [k, v] of Object.entries(q.eq)) r = r.eq(k, v); if (q.order) r = r.order(q.order, { ascending: !!q.asc }); const { data, error } = await r; if (error) throw new Error(error.message); return data; }
+// cached read: returns the data, or undefined while it loads (the screen re-renders when it arrives)
+function rcGet(key, loader) {
+  if (key in RC.cache) return RC.cache[key];
+  if (!RC.busy[key]) { RC.busy[key] = 1; delete RC.err[key];
+    loader().then((d) => { RC.cache[key] = d; }).catch((e) => { RC.cache[key] = null; RC.err[key] = e.message || String(e); }).finally(() => { delete RC.busy[key]; keepScroll(render); }); }
+  return undefined;
+}
+const rcDrop = (...prefixes) => { for (const k of Object.keys(RC.cache)) if (prefixes.some((p) => k.startsWith(p))) delete RC.cache[k]; };
+async function rcDo(fn, args, okMsg, drops = []) {
+  try { const r = await rcRpc(fn, args); rcDrop(...drops); if (okMsg) toast(okMsg); keepScroll(render); return r ?? true; }
+  catch (e) { toast('Not saved: ' + (e.message || e)); return null; }
+}
+const rcLoading = (key) => RC.err[key] ? `<div class="note warn small">Could not load: ${esc(RC.err[key])} <button class="btn sm" data-rcreload="${esc(key)}">Try again</button></div>` : '<p class="muted small">Loading…</p>';
+const rcOffline = (what) => `<div class="card"><h2>${what}</h2><div class="note info small">This screen works in the live LOS, connected to the database, where the deadlines, classifications and audit trail are kept. Sign in at <b>login.html</b> to use it.</div></div>`;
+const rcDT = (s) => s ? new Date(s).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+const rcD = (s) => s ? new Date(String(s).length === 10 ? s + 'T12:00:00' : s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+const rcLbl = (s) => String(s || '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+const rcVal = (id) => { const el = document.getElementById(id); return el ? (el.type === 'checkbox' ? el.checked : el.value.trim()) : ''; };
+const rcISO = (v) => v ? new Date(v).toISOString() : null;
+const rcNowLocal = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+const rcNum = (v) => v === '' || v == null || isNaN(+String(v).replace(/[$,]/g, '')) ? null : +String(v).replace(/[$,]/g, '');
+const rcPill = (s, map) => `<span class="pill ${map[s] || ''}">${esc(rcLbl(s))}</span>`;
+const rcRuleNote = (r) => r && r.status !== 'approved' ? `<span class="pill warn" title="${esc(r.warning || '')}">Rule ${esc(r.rule_id)} v${r.version} not approved</span>` : '';
+function rcDownload(name, data, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); }
+async function rcSha256(buf) { const b = typeof buf === 'string' ? new TextEncoder().encode(buf) : buf; const h = await crypto.subtle.digest('SHA-256', b); return [...new Uint8Array(h)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
+const rcB64 = (buf) => { let s = ''; const u = new Uint8Array(buf); for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+let rcXLSX = null;
+function rcLoadXLSX() { if (window.XLSX) return Promise.resolve(window.XLSX); if (rcXLSX) return rcXLSX;
+  rcXLSX = new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload = () => ok(window.XLSX); s.onerror = () => { rcXLSX = null; no(new Error('Excel library did not load')); }; document.head.appendChild(s); });
+  return rcXLSX; }
+
+// ---------------------------------------------------------------- vocab
+const BC_EL = [['borrower_name', 'Borrower name'], ['income', 'Income'], ['ssn', 'Social Security number'], ['property_address', 'Property address'], ['property_value', 'Estimated property value'], ['loan_amount', 'Loan amount sought']];
+const BC_SRC = ['loan_application', 'borrower_portal', 'purchase_contract', 'email', 'phone_call', 'text_message', 'real_estate_agent', 'refinance_application', 'credit_report', 'other'];
+const BC_STAGES = ['lead_received', 'prequalification', 'preapproval', 'property_identified', 'application_received', 'trid_triggered', 'broker_disclosures_pending', 'broker_disclosures_delivered', 'official_le_delivered', 'wholesale_lender_shopping', 'lender_selected', 'submitted_to_lender', 'underwriting', 'conditional_approval', 'clear_to_close', 'closed', 'withdrawn_denied_cancelled'];
+const BC_DOCK = ['loan_estimate', 'broker_disclosures', 'trid_disclosures', 'business_purpose_disclosures', 'lender_documents', 'esign_consent', 'intent_to_proceed', 'other'];
+const BC_DSTAT = ['created', 'issued', 'sent', 'delivered', 'received', 'viewed', 'signed'];
+const BC_METH = ['email', 'esign', 'portal', 'mail', 'in_person', 'fax', 'courier', 'other'];
+const TRID_PILL = { incomplete: 'info', triggered: 'acc', not_applicable: '', review_required: 'warn' };
+const LE_PILL = { not_started: '', not_applicable: '', pending: 'info', due_soon: 'warn', met: 'ok', late: 'bad', overdue: 'bad' };
+const SEV_PILL = { blocking: 'bad', review: 'warn', warning: 'info', passed: 'ok', high: 'bad', medium: 'warn', low: 'info' };
+const MCR_STAT_PILL = { not_started: '', collecting_data: 'info', validation_pending: 'info', reconciliation_required: 'warn', ready_for_review: 'acc', approved: 'acc', exported: 'acc', uploaded_to_nmls: 'acc', submitted: 'ok', accepted_filed: 'ok', amendment_required: 'bad', amended: 'ok' };
+const MCR_NEXT = { ready_for_review: ['approved'], approved: ['uploaded_to_nmls', 'submitted'], exported: ['uploaded_to_nmls', 'submitted'], uploaded_to_nmls: ['submitted'], submitted: ['accepted_filed', 'amendment_required'], accepted_filed: ['amendment_required'], amendment_required: ['amended'] };
+const rcElVal = (el, v) => { if (!v) return '—'; if (v.last4) return '***-**-' + esc(v.last4); if (v.amount != null) return usd(+v.amount); return esc(v.text ?? JSON.stringify(v)); };
+
+// ================================================================ Loan › Compliance (TRID)
+(() => { const at = (k) => LOAN_MENU.findIndex(([x]) => x === k); if (at('trid') < 0) LOAN_MENU.splice(Math.max(0, at('disclosure')) + 1, 0, ['trid', 'TRID Compliance']); })();
+ICON.trid = '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z M9 12l2 2 4-4"/>';
+T.trid = (l) => {
+  if (!rcLive() || !l.dbId) return rcOffline('TRID compliance');
+  const key = 'ov:' + l.dbId; const o = rcGet(key, () => rcRpc('bc_loan_overview', { p_loan: l.dbId }));
+  if (o === undefined || o === null) return `<div class="card"><h2>TRID compliance</h2>${rcLoading(key)}</div>`;
+  const c = o.compliance || {}; const t = o.le_timing || {}; const ed = o.can_edit; const isC = o.is_compliance; const sec = S.tridSec || 'app';
+  const els = Object.fromEntries((o.elements || []).map((e) => [e.element, e]));
+  const head = `<div class="card"><div class="spread"><div><h2>TRID compliance</h2><p class="muted small">Six pieces of information, Loan Estimate timing, deliveries, lender shopping and the audit trail for this loan. Deadlines are calculated by the database from the dates the information was actually received.</p></div>
+    <span class="row"><button class="btn sm" data-rcreload="${esc(key)}">Refresh</button><button class="btn sm pri" data-bcaudit="${l.dbId}">Generate Compliance Audit Package</button></span></div>
+    <div class="grid g4 kpig">${kpi('TRID', rcLbl(c.trid_status), c.trid_triggered_at ? 'application on ' + rcDT(c.trid_triggered_at) : `${(o.elements || []).length} of 6 items received`, null, TRID_PILL[c.trid_status] || '')}
+      ${kpi('Loan Estimate', rcLbl(t.status || 'not_started'), t.deadline ? 'due ' + rcD(t.deadline) + (t.business_days_left != null ? ` · ${t.business_days_left} business day(s) left` : '') : 'no deadline yet', null, LE_PILL[t.status] || '')}
+      ${kpi('Credit purpose', rcLbl(c.credit_purpose), c.purpose_basis ? c.purpose_basis : 'not classified', null, c.credit_purpose === 'undetermined' ? 'warn' : '')}
+      ${kpi('Audit trail', o.chain?.ok ? 'Intact' : 'BROKEN', `${o.chain?.events || 0} events · hash-chained`, null, o.chain?.ok ? 'ok' : 'warn')}</div>
+    <div class="row small"><label>Stage<select data-bcstage="${l.dbId}" ${ed ? '' : 'disabled'}>${BC_STAGES.map((s) => `<option value="${s}" ${c.broker_stage === s ? 'selected' : ''}>${rcLbl(s)}</option>`).join('')}</select></label>
+      ${(o.exceptions || []).filter((x) => x.status === 'open').length ? `<span class="pill bad">${(o.exceptions || []).filter((x) => x.status === 'open').length} open exception(s)</span>` : '<span class="pill ok">No open exceptions</span>'}
+      ${rcRuleNote(o.rules?.le)}${o.esign_consent ? '<span class="pill ok">E-SIGN consent on file</span>' : '<span class="pill warn">No E-SIGN consent yet</span>'}</div></div>`;
+  const tabs = `<nav class="tabs" role="tablist">${[['app', 'Application data'], ['le', 'Loan Estimates'], ['del', 'Deliveries'], ['lenders', 'Lender shopping'], ['pk', 'Disclosure packages'], ['exc', `Exceptions${(o.exceptions || []).filter((x) => x.status === 'open').length ? ' (' + (o.exceptions || []).filter((x) => x.status === 'open').length + ')' : ''}`], ['log', 'Audit trail']].map(([k, n]) => `<button role="tab" class="${sec === k ? 'on' : ''}" aria-selected="${sec === k}" data-tridsec="${k}">${n}</button>`).join('')}</nav>`;
+  let body = '';
+  if (sec === 'app') {
+    body = `<div class="card"><h2>The six pieces of information</h2><p class="muted small">The application exists for TRID when all six are received (12 CFR 1026.2(a)(3)(ii)). "Received" is when GlobalNet actually got it — not when it was typed in. Corrections keep the original record.</p>
+      <div class="tw"><table><thead><tr><th>Item</th><th>Value</th><th>Received</th><th>Entered</th><th>Source</th><th>Verification</th><th></th></tr></thead><tbody>
+      ${BC_EL.map(([k, n]) => { const e = els[k]; return `<tr><td><b>${n}</b></td><td>${e ? rcElVal(k, e.value) : '<span class="pill warn">Not received</span>'}</td><td>${e ? rcDT(e.received_at) : '—'}</td><td class="small muted">${e ? rcDT(e.entered_at) : ''}</td><td class="small">${e ? esc(rcLbl(e.source)) : ''}</td>
+        <td>${e ? rcPill(e.verification_status, { verified: 'ok', unverified: 'info', rejected: 'bad' }) : ''}</td><td>${ed ? `<span class="row"><button class="btn sm" data-bcrecv="${k}">${e ? 'Update' : 'Record'}</button>${e && e.verification_status !== 'verified' ? `<button class="btn sm" data-bcverify="${k}">Verify</button>` : ''}</span>` : ''}</td></tr>`; }).join('')}</tbody></table></div>
+      ${S.bcRecv ? (() => { const k = S.bcRecv; const e = els[k]; const n = BC_EL.find((x) => x[0] === k)[1]; return `<div class="card sub"><h3>${e ? 'Update' : 'Record'}: ${n}</h3><div class="fg">
+        <label>Value${k === 'ssn' ? ' (last 4 digits only — the full number is never stored here)' : ''}<input id="bcr-v" ${k === 'ssn' ? 'maxlength="4" inputmode="numeric" placeholder="1234"' : ['income', 'property_value', 'loan_amount'].includes(k) ? 'inputmode="decimal" placeholder="$"' : ''}></label>
+        <label>Actually received<input id="bcr-at" type="datetime-local" value="${rcNowLocal()}"></label>
+        <label>Source<select id="bcr-src">${BC_SRC.map((s) => `<option value="${s}">${rcLbl(s)}</option>`).join('')}</select></label>
+        ${e ? `<label>Kind of change<select id="bcr-kind"><option value="update">Update (new information)</option><option value="correction">Correction of an entry error</option></select></label><label style="grid-column:span 2">Reason (required for a correction)<input id="bcr-why"></label>` : ''}
+        <label style="grid-column:span 2">Notes<input id="bcr-notes"></label></div>
+        <div class="row"><button class="btn pri sm" data-bcrecvsave="${k}">Save</button><button class="btn sm" data-bcrecvcancel="1">Cancel</button></div></div>`; })() : ''}</div>
+      <div class="card"><h2>Purpose and application</h2><div class="fg">
+        <label>Credit purpose<select id="bcp-p" ${ed ? '' : 'disabled'}>${['consumer', 'business', 'undetermined'].map((p) => `<option value="${p}" ${c.credit_purpose === p ? 'selected' : ''}>${rcLbl(p)}</option>`).join('')}</select></label>
+        <label style="grid-column:span 2">Basis (why)<input id="bcp-b" value="${esc(c.purpose_basis || '')}" placeholder="e.g. owner-occupied purchase; LLC borrower for rental — business"></label></div>
+        <div class="row">${ed ? `<button class="btn sm pri" data-bcpurpose="${l.dbId}">Save purpose</button>` : ''}${c.application_submitted_at ? `<span class="muted small">Application submitted ${rcDT(c.application_submitted_at)}</span>` : ed ? `<button class="btn sm" data-bcsubmitted="${l.dbId}">Mark application submitted now</button>` : ''}</div>
+        <p class="muted small">An unclear purpose (for example an investment property in a person's name) goes to compliance review — the system never guesses business purpose.</p></div>`;
+  } else if (sec === 'le') {
+    const les = o.loan_estimates || []; const last = les[les.length - 1];
+    body = `<div class="card"><div class="spread"><h2>Loan Estimate versions</h2>${rcRuleNote(o.rules?.creditor)}</div>
+      <p class="muted small">GlobalNet is the mortgage broker and is never named as the creditor. Name the wholesale lender when known, or mark the creditor as not yet known (good-faith effort, comment 37(a)(3)-2).</p>
+      <div class="tw"><table><thead><tr><th>Version</th><th>Created</th><th>Creditor</th><th>Mortgage broker</th><th>Loan officer</th><th>Program</th><th class="num">Amount</th><th class="num">Rate / APR</th><th>Why a new version</th></tr></thead><tbody>
+      ${les.map((v) => `<tr><td><b>v${v.version}</b></td><td>${rcDT(v.created_at)}</td><td>${v.creditor?.known ? esc(v.creditor.name) : '<span class="muted">Not yet known</span>'}</td><td class="small">${esc(v.mortgage_broker?.name || '')} · NMLS ${esc(v.mortgage_broker?.nmls || '')}</td><td class="small">${esc(v.loan_officer?.name || '')} · NMLS ${esc(v.loan_officer?.nmls || '')}</td><td>${esc(v.loan_program || '')}</td><td class="num">${usd(+v.loan_amount)}</td><td class="num">${v.interest_rate}% / ${v.apr ?? '—'}%</td><td class="small">${esc(v.change_reason || '')}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">No Loan Estimate issued yet.</td></tr>'}</tbody></table></div>
+      ${ed ? (S.bcLE ? `<div class="card sub"><h3>Issue Loan Estimate ${last ? 'v' + (last.version + 1) : 'v1'}</h3><div class="fg">
+        <label>Loan program<input id="ble-prog" value="${esc(PROGRAM[l.program] || '')} ${l.term ? l.term / 12 + '-year' : ''}"></label><label>Loan amount<input id="ble-amt" inputmode="decimal" value="${l.amount || ''}"></label><label>Term (months)<input id="ble-term" inputmode="numeric" value="${l.term || 360}"></label>
+        <label>Interest rate %<input id="ble-rate" inputmode="decimal" value="${l.rate || ''}"></label><label>APR %<input id="ble-apr" inputmode="decimal"></label><label>Rate lock<select id="ble-lock"><option value="floating">Floating</option><option value="locked">Locked</option></select></label>
+        <label>Origination charges<input id="ble-orig" inputmode="decimal"></label><label>Third-party fees<input id="ble-3p" inputmode="decimal"></label><label>Lender credits<input id="ble-cred" inputmode="decimal"></label>
+        <label class="ck" style="grid-column:span 3"><input type="checkbox" id="ble-known"> Creditor (wholesale lender) is known</label>
+        <label>Creditor name<input id="ble-cn" placeholder="the wholesale lender"></label><label>Creditor NMLS<input id="ble-cnmls"></label><label>Creditor address<input id="ble-ca"></label>
+        ${last ? '<label style="grid-column:span 3">Why a new version (changed circumstance, new creditor…)<input id="ble-why"></label>' : ''}</div>
+        <div class="row"><button class="btn pri sm" data-bcle="${l.dbId}">Issue</button><button class="btn sm" data-bclecancel="1">Cancel</button></div></div>` : `<button class="btn sm pri" data-bcleopen="1">Issue Loan Estimate</button>`) : ''}</div>`;
+  } else if (sec === 'del') {
+    const de = o.document_events || []; const les = o.loan_estimates || [];
+    body = `<div class="card"><div class="spread"><h2>Deliveries, receipt, consent and intent to proceed</h2>${t.presumed_received ? `<span class="small">LE presumed received ${rcD(t.presumed_received)}${t.actual_receipt_at ? ' · actually received ' + rcDT(t.actual_receipt_at) : ''}</span>` : ''}</div>
+      <p class="muted small">Record what actually happened and when. Electronic delivery without E-SIGN consent is flagged. Intent to proceed: ${o.intent_to_proceed ? '<b>received ' + rcDT(o.intent_to_proceed) + '</b>' : 'not yet received — no fees other than a reasonable credit report fee before it'}.</p>
+      <div class="tw"><table><thead><tr><th>When</th><th>Document</th><th>Version</th><th>Status</th><th>Method</th><th>Recipient</th><th>Counts for timing</th><th>Recorded</th></tr></thead><tbody>
+      ${de.map((d) => `<tr><td>${rcDT(d.occurred_at)}</td><td>${esc(rcLbl(d.document_kind))}</td><td>${d.document_version ? 'v' + d.document_version : ''}</td><td>${esc(rcLbl(d.status))}</td><td>${esc(rcLbl(d.method || ''))}</td><td class="small">${esc(d.recipient || '')}</td><td>${d.valid_for_timing === false ? '<span class="pill warn">No</span>' : 'Yes'}</td><td class="small muted">${rcDT(d.recorded_at)}</td></tr>`).join('') || '<tr><td colspan="8" class="muted">Nothing recorded yet. E-sign envelopes sent from the LOS are recorded here automatically.</td></tr>'}</tbody></table></div>
+      ${ed ? `<div class="card sub"><h3>Record a delivery or receipt</h3><div class="fg">
+        <label>Document<select id="bcd-k">${BC_DOCK.map((s) => `<option value="${s}">${rcLbl(s)}</option>`).join('')}</select></label>
+        <label>Loan Estimate version<select id="bcd-v"><option value="">—</option>${les.map((v) => `<option value="${v.version}" data-ref="${v.id}">v${v.version}</option>`).join('')}</select></label>
+        <label>What happened<select id="bcd-s">${BC_DSTAT.map((s) => `<option value="${s}" ${s === 'sent' ? 'selected' : ''}>${rcLbl(s)}</option>`).join('')}</select></label>
+        <label>How<select id="bcd-m">${BC_METH.map((s) => `<option value="${s}">${rcLbl(s)}</option>`).join('')}</select></label>
+        <label>When it actually happened<input id="bcd-at" type="datetime-local" value="${rcNowLocal()}"></label><label>Recipient<input id="bcd-r" placeholder="borrower e-mail or address"></label>
+        <label style="grid-column:span 3">Notes / evidence (tracking number, e-sign certificate…)<input id="bcd-n"></label></div>
+        <button class="btn pri sm" data-bcdel="${l.dbId}">Record</button></div>` : ''}</div>`;
+  } else if (sec === 'lenders') {
+    const sc = o.scenarios || []; const sel = (o.selections || []).slice(-1)[0];
+    body = `<div class="card"><div class="spread"><h2>Wholesale lender shopping</h2>${sel ? `<span class="pill acc">Selected: ${esc(sel.lender_name)}${sel.submitted_at ? ' · submitted ' + rcD(sel.submitted_at) : ''}</span>` : '<span class="muted small">No lender selected</span>'}</div>
+      <p class="muted small">Compare lenders, then select one. Changing the lender after a Loan Estimate needs a reason and is reviewed (a new creditor can require a new Loan Estimate).</p>
+      <div class="tw"><table><thead><tr><th>Lender</th><th>Program</th><th class="num">Rate</th><th class="num">APR</th><th class="num">Points</th><th class="num">Lender fees</th><th class="num">Credits</th><th class="num">Lock</th><th></th></tr></thead><tbody>
+      ${sc.map((s) => `<tr><td><b>${esc(s.lender_name)}</b>${s.lender_nmls ? `<div class="small muted">NMLS ${esc(s.lender_nmls)}</div>` : ''}</td><td>${esc(s.program || '')}</td><td class="num">${s.interest_rate ?? '—'}%</td><td class="num">${s.apr ?? '—'}</td><td class="num">${s.price_points ?? '—'}</td><td class="num">${s.lender_fees != null ? usd(+s.lender_fees) : '—'}</td><td class="num">${s.lender_credits != null ? usd(+s.lender_credits) : '—'}</td><td class="num">${s.lock_days ?? '—'}</td>
+        <td>${ed && (!sel || sel.scenario_id !== s.id) ? `<button class="btn sm" data-bcpick="${s.id}">Select</button>` : sel && sel.scenario_id === s.id ? '<span class="pill ok">Selected</span>' : ''}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">No scenarios yet.</td></tr>'}</tbody></table></div>
+      ${S.bcPick ? `<div class="card sub"><h3>Change lender</h3><label>Reason for the change<input id="bcl-why"></label><div class="row"><button class="btn pri sm" data-bcpickok="${S.bcPick}">Select</button><button class="btn sm" data-bcpickcancel="1">Cancel</button></div></div>` : ''}
+      ${ed ? `<div class="card sub"><h3>Add a lender scenario</h3><div class="fg"><label>Lender<input id="bcs-n"></label><label>Lender NMLS<input id="bcs-nmls"></label><label>Program<input id="bcs-p"></label>
+        <label>Rate %<input id="bcs-r" inputmode="decimal"></label><label>APR %<input id="bcs-apr" inputmode="decimal"></label><label>Points<input id="bcs-pts" inputmode="decimal"></label>
+        <label>Lender fees<input id="bcs-f" inputmode="decimal"></label><label>Lender credits<input id="bcs-c" inputmode="decimal"></label><label>Lock days<input id="bcs-l" inputmode="numeric"></label></div>
+        <div class="row"><button class="btn pri sm" data-bcscen="${l.dbId}">Add scenario</button>${sel && !sel.submitted_at ? `<button class="btn sm" data-bcsubmit="${l.dbId}">Mark submitted to ${esc(sel.lender_name)}</button>` : ''}</div></div>` : ''}</div>`;
+  } else if (sec === 'pk') {
+    const P = o.packages || []; const by = (k) => P.filter((p) => (p.packages || []).includes(k));
+    body = `<div class="card"><h2>Disclosure packages</h2><p class="muted small">A — broker disclosures · B — TRID (official Loan Estimate and required notices) · C — business-purpose disclosures · D — lender documents. Which documents apply is decided by rules compliance approves; unapproved rules are marked.</p>
+      ${['A', 'B', 'C', 'D'].map((k) => `<h3>Package ${k}</h3><div class="tw"><table><thead><tr><th>Document</th><th>Applies</th><th>Why</th><th>Signers</th><th>Responsibility</th><th>Rule</th></tr></thead><tbody>${by(k).map((p) => `<tr><td><b>${esc(p.name)}</b><div class="small muted">${esc(p.note || '')}</div></td><td>${p.applies ? '<span class="pill ok">Yes</span>' : '<span class="pill">No</span>'}</td><td class="small">${esc(p.why || '')}</td><td class="small">${esc((p.signers || []).join(', '))}</td><td class="small">${esc(rcLbl(p.responsibility || ''))}</td><td>${p.rule_status === 'approved' ? '<span class="pill ok">Approved</span>' : '<span class="pill warn">Pending approval</span>'}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">Nothing in this package.</td></tr>'}</tbody></table></div>`).join('')}</div>`;
+  } else if (sec === 'exc') {
+    body = `<div class="card"><h2>Compliance exceptions</h2><div class="tw"><table><thead><tr><th>Raised</th><th>Kind</th><th>Severity</th><th>Detail</th><th>Status</th><th></th></tr></thead><tbody>
+      ${(o.exceptions || []).map((x) => `<tr><td>${rcDT(x.created_at)}</td><td>${esc(rcLbl(x.kind))}</td><td>${rcPill(x.severity, SEV_PILL)}</td><td class="small">${esc(typeof x.detail === 'object' && x.detail ? x.detail.message || JSON.stringify(x.detail) : x.detail || '')}${x.resolution ? `<div class="muted">Resolution: ${esc(x.resolution)}</div>` : ''}</td><td>${rcPill(x.status, { open: 'bad', resolved: 'ok', waived: '' })}</td>
+        <td>${x.status === 'open' && isC ? `<span class="row"><input id="bcx-${x.id}" placeholder="Resolution (required)"><button class="btn sm" data-bcx="${x.id}|resolved">Resolve</button><button class="btn sm" data-bcx="${x.id}|waived">Waive</button></span>` : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No exceptions.</td></tr>'}</tbody></table></div>
+      ${isC ? '' : '<p class="muted small">Only compliance can resolve or waive exceptions.</p>'}</div>`;
+  } else {
+    const ev = (o.events || []).slice().reverse();
+    body = `<div class="card"><div class="spread"><h2>Audit trail</h2><span class="small">${o.chain?.ok ? '<span class="pill ok">Hash chain verified</span>' : '<span class="pill bad">Hash chain broken — contact compliance</span>'} <span class="muted">last ${esc((o.chain?.last_hash || '').slice(0, 12))}…</span></span></div>
+      <p class="muted small">Append-only. Each event is linked to the previous one by a SHA-256 hash, so any change to history is detectable.</p>
+      <div class="tw"><table><thead><tr><th>#</th><th>When</th><th>Event</th><th>By</th><th>Details</th><th>Rule</th><th>Hash</th></tr></thead><tbody>
+      ${ev.map((e) => `<tr><td>${e.seq}</td><td>${rcDT(e.at || e.occurred_at || e.created_at)}</td><td><b>${esc(rcLbl((e.type || '').toLowerCase()))}</b></td><td class="small">${esc(e.user || rcLbl(e.actor || ''))}</td><td class="small">${esc(e.reason || '')}${e.after ? `<details><summary class="muted">data</summary><pre class="small">${esc(JSON.stringify(e.after, null, 1)).slice(0, 1200)}</pre></details>` : ''}</td><td class="small">${e.rule ? esc(e.rule.rule_id + ' v' + e.rule.version) : ''}</td><td class="small muted"><code>${esc((e.hash || '').slice(0, 10))}</code></td></tr>`).join('') || '<tr><td colspan="7" class="muted">No events yet.</td></tr>'}</tbody></table></div></div>`;
+  }
+  return head + tabs + body;
+};
+
+// ================================================================ Compliance › TRID monitor and Rule approvals
+{ const vc = V.compliance; V.compliance = () => {
+  const h = vc(); const t = curTab('compliance', 'deadlines');
+  let out = h.replace(/(<nav class="tabs" role="tablist">[\s\S]*?)(<\/nav>)/, `$1${[['trid', 'TRID monitor'], ['approvals', 'Rules & approvals']].map(([k, n]) => `<button role="tab" class="${t === k ? 'on' : ''}" aria-selected="${t === k}" data-ptab="compliance|${k}">${n}</button>`).join('')}$2`);
+  if (t === 'mcr' && rcLive()) return out.replace(/<div id="compbody"[^>]*>[\s\S]*<\/div>\s*$/, `<div id="compbody"><div class="card"><h2>NMLS Mortgage Call Report</h2><p class="muted small">The MCR now lives in Reports › Regulatory Reports › NMLS Mortgage Call Report, with validation, approvals, evidence and the audit package.</p><button class="btn pri sm" data-rcgomcr="1">Open the NMLS MCR</button></div></div>`);
+  if (!['trid', 'approvals'].includes(t)) return out;
+  const body = t === 'trid' ? bcMonitorHTML() : bcApprovalsHTML();
+  return out.replace(/<div id="compbody"[^>]*>[\s\S]*<\/div>\s*$/, `<div id="compbody">${body}</div>`);
+}; }
+function bcMonitorHTML() {
+  if (!rcLive()) return rcOffline('TRID monitor');
+  const key = 'bcdash'; const D = rcGet(key, () => rcRpc('bc_dashboard', { p_org: rcOrg() }));
+  if (!D) return `<div class="card">${rcLoading(key)}</div>`;
+  const F = S.bcF || (S.bcF = { q: '', trid: '', le: '', lo: '', stage: '', exc: false });
+  const los = [...new Set(D.map((r) => r.loan_officer).filter(Boolean))].sort();
+  const rows = D.filter((r) => (!F.q || (r.number + ' ' + (r.borrower || '')).toLowerCase().includes(F.q.toLowerCase())) && (!F.trid || r.trid_status === F.trid) && (!F.le || (r.le?.status || 'not_started') === F.le) && (!F.lo || r.loan_officer === F.lo) && (!F.stage || r.stage === F.stage) && (!F.exc || r.open_exceptions > 0));
+  const n = (f) => D.filter(f).length;
+  return `<div class="grid g4 kpig">${kpi('TRID applications', n((r) => r.trid_status === 'triggered'), 'six items received')}${kpi('LE due / late', n((r) => ['due_soon', 'late', 'overdue'].includes(r.le?.status)), 'Loan Estimate timing', null, n((r) => ['late', 'overdue'].includes(r.le?.status)) ? 'warn' : '')}${kpi('Open exceptions', D.reduce((a, r) => a + (r.open_exceptions || 0), 0), 'need compliance', null, D.some((r) => r.open_exceptions) ? 'warn' : 'ok')}${kpi('Purpose undetermined', n((r) => r.credit_purpose === 'undetermined'), 'classify or review')}</div>
+  <div class="card cscroll"><div class="spread"><div class="row small">
+    <input placeholder="Loan or borrower" value="${esc(F.q)}" data-bcf="q" style="max-width:180px">
+    <select data-bcf="trid"><option value="">All TRID</option>${Object.keys(TRID_PILL).map((s) => `<option value="${s}" ${F.trid === s ? 'selected' : ''}>${rcLbl(s)}</option>`).join('')}</select>
+    <select data-bcf="le"><option value="">All LE timing</option>${Object.keys(LE_PILL).map((s) => `<option value="${s}" ${F.le === s ? 'selected' : ''}>${rcLbl(s)}</option>`).join('')}</select>
+    <select data-bcf="lo"><option value="">All loan officers</option>${los.map((s) => `<option ${F.lo === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
+    <select data-bcf="stage"><option value="">All stages</option>${BC_STAGES.map((s) => `<option value="${s}" ${F.stage === s ? 'selected' : ''}>${rcLbl(s)}</option>`).join('')}</select>
+    <label class="ck"><input type="checkbox" data-bcf="exc" ${F.exc ? 'checked' : ''}> Open exceptions</label></div>
+    <span class="row"><span class="muted small">${rows.length} loan(s)</span><button class="btn sm" data-bcscan="1">Run deadline check now</button></span></div>
+    <div class="tw"><table><thead><tr><th>Loan</th><th>Loan officer</th><th>Stage</th><th>TRID</th><th>Application</th><th>LE due</th><th>LE timing</th><th>First delivery</th><th>Purpose</th><th>Lender</th><th>Exceptions</th></tr></thead><tbody>
+    ${rows.map((r) => `<tr><td><button class="link" data-open="${esc(r.number)}">${esc(r.number)}</button><div class="small muted">${esc(r.borrower || '')}${r.state ? ' · ' + esc(r.state) : ''}</div></td><td class="small">${esc(r.loan_officer || '')}</td><td class="small">${esc(rcLbl(r.stage))}</td><td>${rcPill(r.trid_status, TRID_PILL)}</td><td class="small">${rcDT(r.trid_triggered_at)}</td>
+      <td class="small">${rcD(r.le_deadline || r.le?.deadline)}${r.le?.business_days_left != null ? `<div class="muted">${r.le.business_days_left} bd left</div>` : ''}</td><td>${rcPill(r.le?.status || 'not_started', LE_PILL)}</td><td class="small">${r.le?.first_delivery_at ? rcDT(r.le.first_delivery_at) + ' · ' + esc(rcLbl(r.le.first_delivery_method || '')) : '—'}${r.missing_delivery_evidence ? '<div><span class="pill warn">Evidence missing</span></div>' : ''}</td>
+      <td>${rcPill(r.credit_purpose, { consumer: 'ok', business: 'info', undetermined: 'warn' })}</td><td class="small">${esc(r.lender || '—')}${r.submitted ? '<div class="muted">submitted</div>' : ''}</td><td>${r.open_exceptions ? `<span class="pill bad">${r.open_exceptions}</span>` : '<span class="muted">0</span>'}</td></tr>`).join('') || '<tr><td colspan="11" class="muted">No loans match.</td></tr>'}</tbody></table></div>
+    <p class="muted small">Loan Estimate: 3rd business day after the application (office days, minus closed holidays). Presumed receipt: 3 business days after sending (all days but Sundays and federal holidays). Open a loan › TRID Compliance to record receipts and deliveries.</p></div>`;
+}
+function bcApprovalsHTML() {
+  if (!rcLive()) return rcOffline('Rules & approvals');
+  const k1 = 'bcrules'; const R = rcGet(k1, () => rcSel('bc_rules', { order: 'rule_id', asc: true }));
+  const k2 = 'bccal'; const Cal = rcGet(k2, () => rcSel('bc_calendars', { eq: { org_id: rcOrg() } }));
+  const k3 = 'mcrdash:' + new Date().getFullYear(); const M = rcGet(k3, () => rcRpc('mcr_dashboard', { p_org: rcOrg(), p_year: new Date().getFullYear() }));
+  if (R === undefined) return `<div class="card">${rcLoading(k1)}</div>`;
+  const rules = R || []; const pend = rules.filter((r) => ['pending_approval', 'draft'].includes(r.status)); const cal = (Cal || [])[0] || {}; const wd = cal.open_weekdays || [1, 2, 3, 4, 5];
+  return `<div class="card cscroll"><div class="spread"><h2>Compliance rules</h2><span class="small">${pend.length ? `<span class="pill warn">${pend.length} waiting for approval</span>` : '<span class="pill ok">All approved</span>'}</span></div>
+    <p class="muted small">Rules are versioned. A new version only takes effect after compliance approves it; until then screens show it "for reference" with a warning. Read the legal source before approving.</p>
+    <div class="tw"><table><thead><tr><th>Rule</th><th>Version</th><th>Title</th><th>Legal source</th><th>Effective</th><th>Status</th><th></th></tr></thead><tbody>
+    ${rules.map((r) => `<tr><td><b>${esc(r.rule_id)}</b><div class="small muted">${esc(r.regulation || '')}</div></td><td>v${r.version}</td><td class="small">${esc(r.title)}${r.deadline_definition ? `<details><summary class="muted small">definition</summary><pre class="small">${esc(JSON.stringify(r.deadline_definition, null, 1))}</pre></details>` : ''}</td><td class="small">${esc(r.legal_source || '')}</td><td class="small">${rcD(r.effective_date)}</td>
+      <td>${rcPill(r.status, { approved: 'ok', pending_approval: 'warn', draft: 'info', retired: '' })}${r.review_note ? `<div class="small muted">${esc(r.review_note)}</div>` : ''}</td>
+      <td>${['pending_approval', 'draft'].includes(r.status) ? `<span class="row"><button class="btn sm pri" data-bcrule="${r.id}|approved">Approve</button><button class="btn sm" data-bcrule="${r.id}|retired">Retire</button></span>` : r.status === 'approved' ? `<button class="btn sm" data-bcrule="${r.id}|retired">Retire</button>` : ''}</td></tr>`).join('')}</tbody></table></div>
+    <h2>NMLS MCR field mapping (FV7)</h2>${M ? `<p class="small">${M.field_map?.approved || 0} of ${M.field_map?.total || 0} fields approved.</p>${(M.field_map?.approved || 0) < (M.field_map?.total || 0) ? `<div class="row"><input id="mcr-fmnote" placeholder="What you checked it against (e.g. MCR_FV7Definitions.pdf, 2026)" style="min-width:320px"><button class="btn sm pri" data-mcrfm="1">Approve the FV7 field map</button></div>` : ''}<p class="muted small">Review the field-by-field mapping in Reports › NMLS MCR › Field map.</p>` : rcLoading(k3)}
+    <h2>Business calendar</h2><div class="fg"><label>Time zone<input id="bc-tz" value="${esc(cal.timezone || 'America/New_York')}"></label>
+      <label style="grid-column:span 2">Office open on<span class="row">${[[1, 'Mon'], [2, 'Tue'], [3, 'Wed'], [4, 'Thu'], [5, 'Fri'], [6, 'Sat'], [7, 'Sun']].map(([d, n]) => `<label class="ck"><input type="checkbox" data-bcwd="${d}" ${wd.includes(d) ? 'checked' : ''}> ${n}</label>`).join('')}</span></label>
+      <label>Closed day (optional)<input id="bc-cd" type="date"></label><label>Name<input id="bc-cn" placeholder="e.g. Company holiday"></label></div>
+    <button class="btn sm pri" data-bccal="1">Save calendar</button><p class="muted small">Used for the Loan Estimate deadline (general business day). Changes apply to deadlines calculated from now on.</p>
+    <h2>Company identity on disclosures</h2><div class="fg"><label>Legal name<input id="bc-ln" value="GlobalNet Mortgage, Inc."></label><label>Company NMLS<input id="bc-nmls" value="2544747"></label><label>Business model<input value="Mortgage broker" disabled></label></div>
+    <button class="btn sm pri" data-bcident="1">Save identity</button><p class="muted small">GlobalNet appears as the mortgage broker, never as the creditor.</p></div>`;
+}
+
+// ================================================================ Reports › Regulatory Reports › NMLS Mortgage Call Report
+{ const vr = V.reports; V.reports = () => {
+  let h = vr(); h = h.replace('data-ptab="reports|mcr"', 'data-ptab="reports|mcr" title="Regulatory Reports › NMLS Mortgage Call Report"').replace(/(data-ptab="reports\|mcr"[^>]*>)MCR</, '$1NMLS MCR<');
+  if (curTab('reports', 'production') !== 'mcr' || role !== 'admin' || !rcLive()) return h;
+  return h.replace(/(<\/nav>)[\s\S]*$/, `$1${mcrModuleHTML()}`);
+}; }
+function mcrModuleHTML() {
+  const M0 = S.mcrM || (S.mcrM = { y: new Date().getFullYear(), f: null, sec: 'report', line: null });
+  const key = 'mcrdash:' + M0.y; const D = rcGet(key, () => rcRpc('mcr_dashboard', { p_org: rcOrg(), p_year: M0.y }));
+  if (!D) return `<div class="card"><h2>NMLS Mortgage Call Report</h2>${rcLoading(key)}</div>`;
+  const fl = (D.filings || []).slice().sort((a, b) => (a.year - b.year) || ((a.quarter || 5) - (b.quarter || 5)));
+  const head = `<div class="card"><div class="spread"><div><p class="muted small">Reports › Regulatory Reports</p><h2>NMLS Mortgage Call Report</h2><p class="muted small">${esc(D.company?.name || '')} · NMLS ${esc(D.company?.nmls || '')} · states ${esc((D.company?.states || []).join(', '))} · FV7 · RMLA quarterly, Financial Condition annually</p></div>
+    <span class="row"><label class="small">Year<select data-mcrm="y">${[M0.y - 1, M0.y, M0.y + 1].filter((y) => y >= 2025).map((y) => `<option ${M0.y === y ? 'selected' : ''}>${y}</option>`).join('')}</select></label><button class="btn sm" data-rcreload="${key}">Refresh</button></span></div>
+    ${(D.alerts || []).length ? `<div class="note warn small">${(D.alerts || []).map((a) => esc(a.message)).join('<br>')}</div>` : ''}
+    ${Object.values(D.rules || {}).some((r) => r.status !== 'approved') ? `<div class="note info small">Rules waiting for compliance approval: ${Object.values(D.rules).filter((r) => r.status !== 'approved').map((r) => esc(r.rule_id)).join(', ')} · field map ${D.field_map?.approved || 0}/${D.field_map?.total || 0} approved. Results are for review until approved. Weekend/holiday due dates are not shifted automatically — confirm with NMLS.</div>` : ''}
+    <div class="tw"><table><thead><tr><th>Report</th><th>Period</th><th>Due</th><th>Status</th><th>Last validation</th><th>Findings</th><th>Evidence</th><th></th></tr></thead><tbody>
+    ${fl.map((f) => { const fd = f.findings || {}; return `<tr class="${M0.f === f.id ? 'sel' : ''}"><td><b>${f.component === 'RMLA' ? 'RMLA' : 'Financial Condition'}</b>${f.amendment_seq ? ` <span class="pill info">Amendment ${f.amendment_seq}</span>` : ''}</td><td>${f.component === 'RMLA' ? `${f.year} Q${f.quarter}` : f.year}</td>
+      <td>${rcD(f.due_date)}<div class="small ${f.days_left < 0 && !['submitted', 'accepted_filed', 'amended'].includes(f.status) ? 'bad-t' : 'muted'}">${['submitted', 'accepted_filed', 'amended'].includes(f.status) ? '' : f.days_left < 0 ? -f.days_left + ' day(s) overdue' : f.days_left + ' day(s) left'}</div></td>
+      <td>${rcPill(f.status, MCR_STAT_PILL)}${f.nmls_confirmation ? `<div class="small muted">NMLS ${esc(f.nmls_confirmation)}</div>` : ''}${f.overdue_reason ? `<div class="small muted">Late: ${esc(f.overdue_reason)}</div>` : ''}</td><td class="small">${rcDT(f.run_at)}</td>
+      <td class="small">${f.findings ? ['blocking', 'review', 'warning'].map((s) => fd[s] ? `<span class="pill ${SEV_PILL[s]}">${fd[s]} ${s}</span>` : '').join(' ') || '<span class="pill ok">Passed</span>' : '—'}</td><td>${f.evidence || 0}</td><td><button class="btn sm ${M0.f === f.id ? 'pri' : ''}" data-mcrf="${f.id}">Open</button></td></tr>`; }).join('')}</tbody></table></div></div>`;
+  const tabs = `<nav class="tabs" role="tablist">${[['report', 'Selected report'], ['fieldmap', 'Field map'], ['imports', 'Historical imports'], ['fc', 'Financial Condition'], ['sources', 'NMLS updates']].map(([k, n]) => `<button role="tab" class="${M0.sec === k ? 'on' : ''}" aria-selected="${M0.sec === k}" data-mcrsec="${k}">${n}</button>`).join('')}</nav>`;
+  let body = '';
+  if (M0.sec === 'report') body = M0.f ? mcrFilingHTML(M0.f) : '<div class="card"><p class="muted">Open a report above.</p></div>';
+  else if (M0.sec === 'fieldmap') { const f0 = fl.find((f) => f.component === 'RMLA'); const d = f0 && rcGet('mcrf:' + f0.id, () => rcRpc('mcr_filing_detail', { p_filing: f0.id }));
+    body = `<div class="card"><div class="spread"><h2>FV7 field map</h2><span class="small">${D.field_map?.approved || 0} of ${D.field_map?.total || 0} approved</span></div><p class="muted small">Where each NMLS field comes from in the LOS and how it is calculated. Changes are versioned; compliance approves before results are used for filing.</p>
+      ${d ? `<div class="tw"><table><thead><tr><th>Field</th><th>Section</th><th>Description</th><th>LOS source</th><th>Calculation</th><th>Required</th><th>Status</th></tr></thead><tbody>${(d.fields || []).map((x) => `<tr><td><b>${esc(x.field_id)}</b></td><td class="small">${esc(x.section)}</td><td class="small">${esc(x.description)}</td><td class="small"><code>${esc(x.los_source || '')}</code></td><td class="small">${esc(x.calculation || '')}</td><td class="small">${esc(rcLbl(x.required))}</td><td>${rcPill(x.status, { approved: 'ok', pending_approval: 'warn', retired: '' })}</td></tr>`).join('')}</tbody></table></div>` : rcLoading('mcrf:' + (f0 && f0.id))}
+      ${(D.field_map?.approved || 0) < (D.field_map?.total || 0) ? `<div class="row"><input id="mcr-fmnote" placeholder="What you checked it against (e.g. MCR_FV7Definitions.pdf)" style="min-width:320px"><button class="btn sm pri" data-mcrfm="1">Approve the FV7 field map</button></div>` : ''}</div>`; }
+  else if (M0.sec === 'imports') body = `<div class="card"><h2>Historical MCR files</h2><p class="muted small">Import earlier MCR files (for example "2026 Q1-MCR.xlsx"). The file name never marks a report as submitted: say what the file is, and for a submitted or accepted filing enter the NMLS confirmation number.</p>
+      <div class="fg"><label style="grid-column:span 2">File (.xlsx, .xls, .csv, .xml)<input type="file" id="mcri-file" accept=".xlsx,.xls,.csv,.xml"></label><label>Year<input id="mcri-y" inputmode="numeric" value="${M0.y}"></label><label>Quarter<select id="mcri-q">${[1, 2, 3, 4].map((q) => `<option>${q}</option>`).join('')}</select></label>
+        <label>What is this file?<select id="mcri-c"><option value="">Choose…</option><option value="los_export">Export from another LOS (e.g. LendingPad) — not filed</option><option value="draft">Draft — not filed</option><option value="submitted_report">Submitted to NMLS (I have the confirmation)</option><option value="accepted_filing">Accepted by NMLS (I have the confirmation)</option><option value="unknown">Not sure</option></select></label>
+        <label>NMLS confirmation number<input id="mcri-ref" placeholder="required if submitted/accepted"></label></div>
+      <button class="btn sm pri" data-mcrimp="1">Import</button>
+      <div class="tw"><table><thead><tr><th>File</th><th>Period</th><th>Classification</th><th>Evidence</th><th>Reconciliation</th><th>Imported</th><th></th></tr></thead><tbody>
+      ${(D.imports || []).map((i) => `<tr><td><b>${esc(i.file_name)}</b><div class="small muted"><code>${esc((i.sha256 || '').slice(0, 16))}…</code></div></td><td>${i.year} Q${i.quarter}</td><td>${esc(rcLbl(i.classification))}</td><td class="small">${esc(i.classification_evidence?.reference || '')}</td><td class="small">${i.reconciliation ? esc(JSON.stringify(i.reconciliation)).slice(0, 160) : '—'}</td><td class="small">${rcDT(i.imported_at)}</td>
+        <td>${['submitted_report', 'accepted_filing'].includes(i.classification) ? `<button class="btn sm" data-mcrext="${i.id}|${esc(i.classification_evidence?.reference || '')}">Record as filed</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">Nothing imported yet.</td></tr>'}</tbody></table></div></div>`;
+  else if (M0.sec === 'fc') { const ff = fl.find((f) => f.component === 'FC'); const d = ff && rcGet('mcrf:' + ff.id, () => rcRpc('mcr_filing_detail', { p_filing: ff.id }));
+    body = `<div class="card"><h2>Financial Condition ${ff ? ff.year : ''}</h2><p class="muted small">Only verified accounting figures are used — nothing is estimated. Enter a value with its source (accounting, CPA statement, import; QuickBooks when connected). A change keeps the old value and needs a reason.</p>
+      ${ff ? (d ? `<div class="tw"><table><thead><tr><th>Field</th><th class="num">Amount</th><th>Source</th><th>Evidence</th><th>Recorded</th></tr></thead><tbody>${(d.fc_values || []).map((v) => `<tr><td><b>${esc(v.field_id)}</b></td><td class="num">${usd(+v.amount, 2)}</td><td>${esc(rcLbl(v.source))}</td><td class="small">${esc(v.evidence || '')}</td><td class="small">${rcDT(v.recorded_at)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No values recorded — the Financial Condition cannot be completed yet.</td></tr>'}</tbody></table></div>` : rcLoading('mcrf:' + ff.id)) : '<p class="muted">No Financial Condition filing this year.</p>'}
+      ${ff ? `<div class="fg"><label>Field ID<input id="fc-f" placeholder="e.g. FC field code"></label><label>Amount<input id="fc-a" inputmode="decimal"></label><label>Source<select id="fc-s"><option value="accounting_verified">Accounting (verified)</option><option value="cpa_statement">CPA statement</option><option value="import">Import</option></select></label><label style="grid-column:span 3">Evidence (statement, report, file)<input id="fc-e"></label></div><button class="btn sm pri" data-fcsave="${ff.year}">Record value</button>` : ''}</div>`; }
+  else body = `<div class="card"><h2>NMLS regulatory sources</h2><p class="muted small">Official NMLS pages the system checks for changes (FV7 user guide, definitions, XML schema, FAQ…). A detected change is never applied automatically — compliance reviews and approves it.</p>
+      <div class="tw"><table><thead><tr><th>Source</th><th>Kind</th><th>Last checked</th><th>Status</th></tr></thead><tbody>${(D.sources || []).map((s) => `<tr><td><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a></td><td>${esc(rcLbl(s.kind))}</td><td class="small">${s.last_checked_at ? rcDT(s.last_checked_at) : 'Not checked yet (needs the background worker)'}</td><td>${esc(s.status || '—')}</td></tr>`).join('')}</tbody></table></div>
+      <h3>Detected changes</h3><div class="tw"><table><thead><tr><th>Detected</th><th>Summary</th><th>Status</th><th></th></tr></thead><tbody>${(D.reg_changes || []).map((c) => `<tr><td class="small">${rcDT(c.detected_at)}</td><td class="small">${esc(c.summary || '')}</td><td>${esc(rcLbl(c.status))}</td><td>${c.status === 'pending_review' ? `<span class="row"><button class="btn sm pri" data-mcrreg="${c.id}|approved">Approve</button><button class="btn sm" data-mcrreg="${c.id}|rejected">Reject</button></span>` : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No changes detected.</td></tr>'}</tbody></table></div></div>`;
+  return head + tabs + body;
+}
+function mcrFilingHTML(id) {
+  const key = 'mcrf:' + id; const d = rcGet(key, () => rcRpc('mcr_filing_detail', { p_filing: id }));
+  if (!d) return `<div class="card">${rcLoading(key)}</div>`;
+  const f = d.filing || {}; const run = d.run; const M0 = S.mcrM; const lab = Object.fromEntries((d.fields || []).map((x) => [x.field_id, x.description]));
+  const per = f.component === 'RMLA' ? `${f.year} Q${f.quarter}` : f.year; const final = ['submitted', 'accepted_filed', 'amended'].includes(f.status);
+  const fs = d.findings || []; const openB = fs.filter((x) => x.severity === 'blocking' && x.status === 'open').length; const openR = fs.filter((x) => x.severity === 'review' && x.status === 'open').length;
+  const lines = run ? [...new Set(Object.values(run.totals || {}).flatMap((o) => Object.keys(o)))].sort() : [];
+  const items = (d.items || []).filter((it) => M0.line && it.state === M0.line.st && it.line_id === M0.line.id);
+  return `<div class="card"><div class="spread"><div><h2>${f.component === 'RMLA' ? 'RMLA' : 'Financial Condition'} ${per}${f.amendment_seq ? ' · amendment ' + f.amendment_seq : ''}</h2><p class="small">${rcPill(f.status, MCR_STAT_PILL)} · due ${rcD(f.due_date)} · form ${esc(f.form_version || 'FV7')}${run ? ` · snapshot <code>${esc((run.snapshot_sha256 || '').slice(0, 12))}…</code>` : ''}</p></div>
+    <span class="row">${final ? '' : `<button class="btn pri" data-mcrcalc="${id}">Run MCR Compliance Validation</button>`}<button class="btn sm" data-mcraudit="${id}">Generate MCR Audit Package</button></span></div>
+    ${run ? `<div class="row small">${['blocking', 'review', 'warning'].map((s) => (() => { const n = fs.filter((x) => x.severity === s && x.status === 'open').length; return `<span class="pill ${n ? SEV_PILL[s] : 'ok'}">${n} ${s === 'review' ? 'compliance review' : s} open</span>`; })()).join(' ')} <span class="muted">Last run ${rcDT(run.run_at)} · ${(d.runs || []).length} run(s) kept</span></div>` : '<div class="note info small">Not validated yet. Run the validation to collect the loans, calculate each line with its source, and check the results.</div>'}
+    ${(MCR_NEXT[f.status] || []).length ? `<div class="row small"><label>Next status<select id="mcr-ns">${MCR_NEXT[f.status].map((s) => `<option value="${s}">${rcLbl(s)}</option>`).join('')}</select></label><input id="mcr-nsn" placeholder="Note (reason / what was done)" style="min-width:260px"><button class="btn sm pri" data-mcrstatus="${id}">Change status</button></div>
+      <p class="muted small">Approval is blocked while there are blocking errors (${openB}) or open compliance reviews (${openR}). "Submitted" and "Accepted" need NMLS evidence first — nothing is marked filed without it.</p>` : ''}
+    ${f.due_date && new Date(f.due_date + 'T23:59:59') < new Date() && !final ? `<div class="row small"><input id="mcr-od" placeholder="Why is this late? (required for overdue reports)" value="${esc(f.overdue_reason || '')}" style="min-width:320px"><button class="btn sm" data-mcrod="${id}">Save reason</button></div>` : ''}</div>
+  ${run && f.component === 'RMLA' ? `<div class="card"><div class="spread"><h2>Section I — Residential Mortgage Loan Activity</h2><span class="muted small">Click a number to see the loans behind it</span></div>
+    <div class="tw"><table class="mcrtab"><thead><tr><th>Line</th>${Object.keys(run.totals || {}).map((st) => `<th class="c" colspan="2">${esc(st)}</th>`).join('')}</tr><tr><th></th>${Object.keys(run.totals || {}).map(() => '<th class="num">Count</th><th class="num">Amount</th>').join('')}</tr></thead><tbody>
+    ${lines.map((ln) => `<tr><td><b>${esc(ln)}</b><div class="small muted">${esc(lab[ln] || '')}</div></td>${Object.entries(run.totals || {}).map(([st, o]) => { const v = o[ln] || { count: 0, amount: 0 }; const on = M0.line && M0.line.st === st && M0.line.id === ln; return `<td class="num"><button class="link ${on ? 'on' : ''}" data-mcrline="${esc(st)}|${esc(ln)}">${v.count}</button></td><td class="num">${usd(+v.amount)}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div>
+    ${M0.line ? `<h3>${esc(M0.line.st)} · ${esc(M0.line.id)} — ${esc(lab[M0.line.id] || '')}</h3><div class="tw"><table><thead><tr><th>Loan</th><th>Included</th><th class="num">Count</th><th class="num">Amount</th><th>Why</th><th>Source</th></tr></thead><tbody>${items.map((it) => `<tr><td>${it.loan_number ? `<button class="link" data-open="${esc(it.loan_number)}">${esc(it.loan_number)}</button>` : '—'}</td><td>${it.included ? 'Yes' : '<span class="pill">Excluded</span>'}</td><td class="num">${it.count}</td><td class="num">${usd(+it.amount)}</td><td class="small">${esc(it.reason)}</td><td class="small muted">${esc(JSON.stringify(it.source || {})).slice(0, 220)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No loans on this line.</td></tr>'}</tbody></table></div>` : ''}
+    ${(run.mlo || []).length ? `<h3>Mortgage loan originators</h3><div class="tw"><table><thead><tr><th>MLO</th><th>NMLS</th><th class="num">Closed</th><th class="num">Amount</th></tr></thead><tbody>${run.mlo.map((m) => `<tr><td>${esc(m.name || '')}</td><td>${esc(m.nmls || '')}</td><td class="num">${m.count ?? ''}</td><td class="num">${m.amount != null ? usd(+m.amount) : ''}</td></tr>`).join('')}</tbody></table></div>` : ''}</div>` : ''}
+  ${run ? `<div class="card"><h2>Validation findings</h2><div class="tw"><table><thead><tr><th>Severity</th><th>Check</th><th>Message</th><th>Loan</th><th>Status</th><th></th></tr></thead><tbody>
+    ${fs.slice().sort((a, b) => ['blocking', 'review', 'warning', 'passed'].indexOf(a.severity) - ['blocking', 'review', 'warning', 'passed'].indexOf(b.severity)).map((x) => `<tr><td>${rcPill(x.severity === 'review' ? 'review' : x.severity, SEV_PILL)}</td><td class="small"><code>${esc(x.code)}</code></td><td class="small">${esc(x.message)}${x.resolution ? `<div class="muted">→ ${esc(x.resolution)}</div>` : ''}</td><td class="small">${x.loan_number ? `<button class="link" data-open="${esc(x.loan_number)}">${esc(x.loan_number)}</button>` : ''}</td><td>${esc(rcLbl(x.status))}</td>
+      <td>${x.status === 'open' && x.severity !== 'passed' ? `<span class="row"><input id="mf-${x.id}" placeholder="Note (required)">${x.loan_id && /PURPOSE|REPORTABLE|BUSINESS/i.test(x.code) ? `<button class="btn sm" data-mcrclass="${x.loan_id}|yes|${x.id}">Reportable</button><button class="btn sm" data-mcrclass="${x.loan_id}|no|${x.id}">Not reportable</button>` : ''}<button class="btn sm" data-mcrfind="${x.id}|resolved">Resolved</button><button class="btn sm" data-mcrfind="${x.id}|accepted_exception">Accept exception</button></span>` : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No findings.</td></tr>'}</tbody></table></div>
+    <p class="muted small">Passed · Warning · Blocking error · Compliance review. Blocking errors must be fixed at the source (the loan) and the validation run again.</p></div>` : ''}
+  <div class="card"><div class="spread"><h2>Files</h2><span class="row">${run ? `<button class="btn sm" data-mcrexp="${id}|xml">XML (diagnostic)</button><button class="btn sm" data-mcrexp="${id}|xlsx">Excel</button><button class="btn sm" data-mcrexp="${id}|pdf">PDF</button>` : ''}</span></div>
+    <p class="muted small">Every file is kept with its SHA-256 hash and version. The XML stays <b>diagnostic</b> until it is validated against the official NMLS MCR schema (MCRUploadSchemaV7.xsd) — only a validated file counts as exported for upload.</p>
+    <div class="tw"><table><thead><tr><th>Version</th><th>File</th><th>Kind</th><th>Validated</th><th>Hash</th><th>Created</th></tr></thead><tbody>${(d.exports || []).map((x) => `<tr><td>v${x.version}</td><td>${esc(x.file_name)}</td><td>${esc(x.kind.toUpperCase())}</td><td>${x.kind === 'xml' ? (x.xsd_validated ? '<span class="pill ok">Schema valid</span>' : '<span class="pill warn">Diagnostic</span>') : ''}</td><td class="small muted"><code>${esc((x.sha256 || '').slice(0, 12))}</code></td><td class="small">${rcDT(x.created_at)}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No files yet.</td></tr>'}</tbody></table></div></div>
+  <div class="card"><h2>NMLS evidence</h2><p class="muted small">Upload confirmation, submission receipt, acceptance, amendment request or extension. Required before the status can move to uploaded, submitted or accepted.</p>
+    <div class="tw"><table><thead><tr><th>Kind</th><th>Description</th><th>Reference</th><th>File</th><th>Added</th></tr></thead><tbody>${(d.evidence || []).map((x) => `<tr><td>${esc(rcLbl(x.kind))}</td><td class="small">${esc(x.description)}</td><td>${esc(x.reference || '')}</td><td class="small">${esc(x.file_name || '')}${x.sha256 ? ` <code class="muted">${esc(x.sha256.slice(0, 10))}</code>` : ''}</td><td class="small">${rcDT(x.added_at)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No evidence yet.</td></tr>'}</tbody></table></div>
+    <div class="fg"><label>Kind<select id="me-k">${['nmls_upload_confirmation', 'submission_confirmation', 'nmls_acceptance', 'amendment_request', 'extension', 'other'].map((k) => `<option value="${k}">${rcLbl(k)}</option>`).join('')}</select></label><label>NMLS confirmation number<input id="me-r"></label><label>Screenshot or PDF<input type="file" id="me-f" accept=".pdf,.png,.jpg,.jpeg"></label><label style="grid-column:span 3">Description<input id="me-d"></label></div>
+    <button class="btn sm pri" data-mcrev="${id}">Add evidence</button></div>`;
+}
+function mcrRows(d) { const run = d.run || {}; const lab = Object.fromEntries((d.fields || []).map((x) => [x.field_id, x.description])); const out = [];
+  for (const [st, o] of Object.entries(run.totals || {})) for (const [ln, v] of Object.entries(o).sort()) out.push({ state: st, line: ln, description: lab[ln] || '', count: v.count, amount: +v.amount });
+  return out; }
+function mcrXMLDiag(d) { const f = d.filing; const x = (s) => String(s).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]); const by = {};
+  for (const r of mcrRows(d)) (by[r.state] = by[r.state] || []).push(r);
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!-- DIAGNOSTIC FILE — NOT FOR UPLOAD. Generated by GlobalNet LOS from validation run ${x(d.run.id)} (snapshot ${x(d.run.snapshot_sha256)}).
+     It becomes an upload file only after it is mapped to and validated against the official NMLS schema MCRUploadSchemaV7.xsd. -->
+<MCRDiagnostic formVersion="${x(f.form_version || 'FV7')}" component="${x(f.component)}" year="${f.year}"${f.quarter ? ` quarter="${f.quarter}"` : ''}>
+${Object.entries(by).map(([st, rs]) => `  <State code="${x(st)}">\n${rs.map((r) => `    <Field id="${x(r.line)}" count="${r.count}" amount="${r.amount.toFixed(2)}"/>`).join('\n')}\n  </State>`).join('\n')}
+</MCRDiagnostic>
+`; }
+function mcrPrintHTML(d) { const f = d.filing; const rows = mcrRows(d);
+  return `<!doctype html><html><head><meta charset="utf-8"><title>MCR ${f.component} ${f.year}${f.quarter ? ' Q' + f.quarter : ''}</title><style>body{font:12px system-ui,sans-serif;margin:24px;color:#111}table{border-collapse:collapse;width:100%}th,td{border:1px solid #bbb;padding:4px 6px;text-align:left}td.n{text-align:right}h1{font-size:18px}.m{color:#555}</style></head><body>
+<h1>NMLS Mortgage Call Report — ${esc(f.component)} ${f.year}${f.quarter ? ' Q' + f.quarter : ''}</h1><p class="m">GlobalNet Mortgage, Inc. · Status: ${esc(rcLbl(f.status))} · Validation run ${esc(d.run.id)} · ${rcDT(d.run.run_at)} · snapshot SHA-256 ${esc(d.run.snapshot_sha256)}</p>
+<p class="m">Review copy. Not an NMLS filing confirmation.</p><table><thead><tr><th>State</th><th>Field</th><th>Description</th><th>Count</th><th>Amount</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(r.state)}</td><td>${esc(r.line)}</td><td>${esc(r.description)}</td><td class="n">${r.count}</td><td class="n">${usd(r.amount, 2)}</td></tr>`).join('')}</tbody></table>
+<h2>Findings</h2><table><thead><tr><th>Severity</th><th>Check</th><th>Message</th><th>Status</th></tr></thead><tbody>${(d.findings || []).map((x) => `<tr><td>${esc(x.severity)}</td><td>${esc(x.code)}</td><td>${esc(x.message)}</td><td>${esc(x.status)}</td></tr>`).join('')}</tbody></table>
+<script>setTimeout(()=>print(),300)<\/script></body></html>`; }
+
+// ================================================================ events
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-rcreload],[data-tridsec],[data-bcrecv],[data-bcrecvcancel],[data-bcrecvsave],[data-bcverify],[data-bcpurpose],[data-bcsubmitted],[data-bcleopen],[data-bclecancel],[data-bcle],[data-bcdel],[data-bcpick],[data-bcpickok],[data-bcpickcancel],[data-bcscen],[data-bcsubmit],[data-bcx],[data-bcaudit],[data-bcscan],[data-bcrule],[data-bccal],[data-bcident],[data-mcrfm],[data-rcgomcr],[data-mcrf],[data-mcrsec],[data-mcrcalc],[data-mcrline],[data-mcrfind],[data-mcrclass],[data-mcrstatus],[data-mcrod],[data-mcrexp],[data-mcrev],[data-mcraudit],[data-mcrimp],[data-mcrext],[data-fcsave],[data-mcrreg]');
+  if (!b) return; const d = b.dataset; const l = S.loanId ? loan(S.loanId) : null; const ovKey = l && l.dbId ? ['ov:' + l.dbId, 'bcdash'] : ['bcdash'];
+  if (d.rcreload) { delete RC.cache[d.rcreload]; delete RC.err[d.rcreload]; return keepScroll(render); }
+  if (d.tridsec) { S.tridSec = d.tridsec; S.bcRecv = null; S.bcLE = false; S.bcPick = null; return keepScroll(render); }
+  if (d.bcrecv) { S.bcRecv = d.bcrecv; return keepScroll(render); }
+  if (d.bcrecvcancel) { S.bcRecv = null; return keepScroll(render); }
+  if (d.bcrecvsave || d.bcverify) {
+    const k = d.bcrecvsave || d.bcverify; const o = RC.cache['ov:' + l.dbId]; const cur = (o.elements || []).find((x) => x.element === k);
+    let value, at, src, kind = 'new', why = null, notes = null, ver = null;
+    if (d.bcverify) { value = cur.value; at = cur.received_at; src = cur.source; kind = 'verification'; ver = 'verified'; }
+    else { const raw = rcVal('bcr-v'); if (!raw) return toast('Enter the value');
+      if (k === 'ssn') { if (!/^\d{4}$/.test(raw)) return toast('Enter only the last 4 digits'); value = { last4: raw }; }
+      else if (['income', 'property_value', 'loan_amount'].includes(k)) { const n = rcNum(raw); if (n == null) return toast('Enter an amount'); value = { amount: n }; } else value = { text: raw };
+      at = rcISO(rcVal('bcr-at')); if (!at) return toast('Enter when it was actually received'); src = rcVal('bcr-src'); notes = rcVal('bcr-notes') || null;
+      if (cur) { kind = rcVal('bcr-kind') || 'update'; why = rcVal('bcr-why') || null; if (kind === 'correction' && !why) return toast('A correction needs a reason'); } }
+    const r = await rcDo('bc_record_receipt', { p_loan: l.dbId, p_element: k, p_value: value, p_received_at: at, p_source: src, p_document: null, p_verification: ver, p_notes: notes, p_supersedes: cur ? cur.current_id : null, p_kind: kind, p_reason: why }, d.bcverify ? 'Marked verified' : 'Recorded', ovKey);
+    if (r) S.bcRecv = null; return;
+  }
+  if (d.bcpurpose) { const p = rcVal('bcp-p'); const basis = rcVal('bcp-b'); if (!basis) return toast('Explain the basis for the purpose'); return rcDo('bc_set_purpose', { p_loan: d.bcpurpose, p_purpose: p, p_basis: basis, p_tags: null }, 'Purpose saved', ovKey); }
+  if (d.bcsubmitted) return rcDo('bc_application_submitted', { p_loan: d.bcsubmitted, p_at: new Date().toISOString(), p_channel: 'los' }, 'Application marked submitted', ovKey);
+  if (d.bcleopen) { S.bcLE = true; return keepScroll(render); }
+  if (d.bclecancel) { S.bcLE = false; return keepScroll(render); }
+  if (d.bcle) { const known = rcVal('ble-known'); const p = { loan_program: rcVal('ble-prog'), loan_amount: rcNum(rcVal('ble-amt')), loan_term_months: rcNum(rcVal('ble-term')), interest_rate: rcNum(rcVal('ble-rate')), apr: rcNum(rcVal('ble-apr')), rate_lock_status: rcVal('ble-lock'),
+      origination_charges: rcNum(rcVal('ble-orig')), third_party_fees: rcNum(rcVal('ble-3p')), lender_credits: rcNum(rcVal('ble-cred')), change_reason: rcVal('ble-why') || null,
+      creditor: known ? { known: true, name: rcVal('ble-cn'), nmls: rcVal('ble-cnmls') || null, address: rcVal('ble-ca') || null } : { known: false } };
+    const r = await rcDo('bc_issue_le', { p_loan: d.bcle, p }, 'Loan Estimate issued', ovKey); if (r) { S.bcLE = false; keepScroll(render); } return; }
+  if (d.bcdel) { const vs = document.getElementById('bcd-v'); const opt = vs && vs.selectedOptions[0]; const at = rcISO(rcVal('bcd-at')); if (!at) return toast('Enter when it happened');
+    return rcDo('bc_record_delivery', { p_loan: d.bcdel, p: { kind: rcVal('bcd-k'), status: rcVal('bcd-s'), method: rcVal('bcd-m'), occurred_at: at, recipient: rcVal('bcd-r') || null, notes: rcVal('bcd-n') || null, version: opt && opt.value ? +opt.value : null, ref: opt && opt.dataset.ref ? opt.dataset.ref : null } }, 'Recorded', ovKey); }
+  if (d.bcpick) { const o = RC.cache['ov:' + l.dbId]; if ((o.selections || []).length) { S.bcPick = d.bcpick; return keepScroll(render); } return rcDo('bc_select_lender', { p_loan: l.dbId, p: { scenario_id: d.bcpick } }, 'Lender selected', ovKey); }
+  if (d.bcpickcancel) { S.bcPick = null; return keepScroll(render); }
+  if (d.bcpickok) { const why = rcVal('bcl-why'); if (!why) return toast('Explain why the lender is changing'); const r = await rcDo('bc_select_lender', { p_loan: l.dbId, p: { scenario_id: d.bcpickok, reason: why } }, 'Lender changed — compliance will review', ovKey); if (r) { S.bcPick = null; keepScroll(render); } return; }
+  if (d.bcscen) { const n = rcVal('bcs-n'); if (!n) return toast('Enter the lender');
+    return rcDo('bc_add_lender_scenario', { p_loan: d.bcscen, p: { lender_name: n, lender_nmls: rcVal('bcs-nmls') || null, program: rcVal('bcs-p') || null, interest_rate: rcNum(rcVal('bcs-r')), apr: rcNum(rcVal('bcs-apr')), price_points: rcNum(rcVal('bcs-pts')), lender_fees: rcNum(rcVal('bcs-f')), lender_credits: rcNum(rcVal('bcs-c')), lock_days: rcNum(rcVal('bcs-l')) } }, 'Scenario added', ovKey); }
+  if (d.bcsubmit) return rcDo('bc_submit_to_lender', { p_loan: d.bcsubmit, p_note: null }, 'Marked submitted to the lender', ovKey);
+  if (d.bcx) { const [id, st] = d.bcx.split('|'); const res = rcVal('bcx-' + id); if (!res) return toast('Enter the resolution'); return rcDo('bc_resolve_exception', { p_id: id, p_status: st, p_resolution: res }, 'Exception ' + st, ovKey); }
+  if (d.bcaudit) { try { const p = await rcRpc('bc_audit_package', { p_loan: d.bcaudit }); const txt = JSON.stringify(p, null, 2); const h = await rcSha256(txt);
+      rcDownload(`Compliance-Audit-${l ? l.id : d.bcaudit}-${new Date().toISOString().slice(0, 10)}.json`, txt, 'application/json'); rcDrop(...ovKey); toast('Audit package generated · SHA-256 ' + h.slice(0, 12) + '…'); keepScroll(render); } catch (err) { toast('Could not generate: ' + err.message); } return; }
+  if (d.bcscan) { const n = await rcDo('bc_scan', { p_org: rcOrg() }, null, ['bcdash', 'ov:']); if (n !== null) toast(`Deadline check done · ${n} new alert(s) or exception(s)`); return; }
+  if (d.bcrule) { const [id, dec] = d.bcrule.split('|'); return rcDo('bc_rule_decide', { p_org: rcOrg(), p_id: id, p_decision: dec, p_note: dec === 'approved' ? 'Approved in Compliance › Rules & approvals' : 'Retired in Compliance › Rules & approvals' }, dec === 'approved' ? 'Rule approved' : 'Rule retired', ['bcrules', 'ov:', 'bcdash']); }
+  if (d.bccal) { const wd = [...document.querySelectorAll('[data-bcwd]')].filter((x) => x.checked).map((x) => +x.dataset.bcwd); const cd = rcVal('bc-cd');
+    return rcDo('bc_set_calendar', { p_org: rcOrg(), p_timezone: rcVal('bc-tz'), p_weekdays: wd, p_closed: cd ? [{ day: cd, name: rcVal('bc-cn') || 'Office closed', closed: true }] : null }, 'Calendar saved', ['bccal']); }
+  if (d.bcident) return rcDo('bc_set_identity', { p_org: rcOrg(), p: { legal_name: rcVal('bc-ln'), nmls: rcVal('bc-nmls') } }, 'Identity saved', ['ov:']);
+  if (d.mcrfm) { const note = rcVal('mcr-fmnote'); if (!note) return toast('Say what you checked the map against'); return rcDo('mcr_field_map_approve', { p_org: rcOrg(), p_form: 'FV7', p_note: note }, 'Field map approved', ['mcr']); }
+  if (d.rcgomcr) { S.ptab = S.ptab || {}; S.ptab.reports = 'mcr'; return go('reports'); }
+  if (d.mcrf) { S.mcrM.f = d.mcrf; S.mcrM.sec = 'report'; S.mcrM.line = null; return keepScroll(render); }
+  if (d.mcrsec) { S.mcrM.sec = d.mcrsec; return keepScroll(render); }
+  if (d.mcrline) { const [st, id] = d.mcrline.split('|'); S.mcrM.line = S.mcrM.line && S.mcrM.line.st === st && S.mcrM.line.id === id ? null : { st, id }; return keepScroll(render); }
+  if (d.mcrcalc) { b.disabled = true; b.textContent = 'Validating…'; const r = await rcDo('mcr_calculate', { p_filing: d.mcrcalc }, null, ['mcr']); if (r) toast(`Validation done · ${r.blocking || 0} blocking · ${r.review || 0} for compliance review`); return; }
+  if (d.mcrfind) { const [id, st] = d.mcrfind.split('|'); const note = rcVal('mf-' + id); if (!note) return toast('Enter a note'); return rcDo('mcr_resolve_finding', { p_id: id, p_status: st, p_note: note }, 'Finding updated', ['mcr']); }
+  if (d.mcrclass) { const [loanId, v, fid] = d.mcrclass.split('|'); const note = rcVal('mf-' + fid); if (!note) return toast('Explain the decision (e.g. borrower is an LLC; business purpose)');
+    const r = await rcDo('mcr_decide_class', { p_loan: loanId, p_field: 'reportable', p_value: v, p_reason: note }, null, []); if (r) await rcDo('mcr_resolve_finding', { p_id: fid, p_status: 'resolved', p_note: (v === 'yes' ? 'Reportable: ' : 'Not reportable: ') + note }, 'Decision recorded — run the validation again', ['mcr']); return; }
+  if (d.mcrstatus) { const st = rcVal('mcr-ns'); const note = rcVal('mcr-nsn'); return rcDo('mcr_set_status', { p_filing: d.mcrstatus, p_status: st, p_note: note || null }, 'Status: ' + rcLbl(st), ['mcr']); }
+  if (d.mcrod) { const r = rcVal('mcr-od'); if (!r) return toast('Enter the reason'); return rcDo('mcr_set_overdue_reason', { p_filing: d.mcrod, p_reason: r }, 'Reason saved', ['mcr']); }
+  if (d.mcrexp) { const [id, kind] = d.mcrexp.split('|'); const det = RC.cache['mcrf:' + id]; if (!det || !det.run) return toast('Run the validation first'); const f = det.filing; const base = `MCR-${f.component}-${f.year}${f.quarter ? '-Q' + f.quarter : ''}`;
+    try { let name, mime, content, blob;
+      if (kind === 'xml') { name = base + '-DIAGNOSTIC.xml'; mime = 'application/xml'; content = mcrXMLDiag(det); blob = new Blob([content], { type: mime }); }
+      else if (kind === 'pdf') { name = base + '-review.html'; mime = 'text/html'; content = mcrPrintHTML(det); const w = window.open('', '_blank'); if (w) { w.document.write(content); w.document.close(); } else blob = new Blob([content], { type: mime }); }
+      else { const X = await rcLoadXLSX(); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, X.utils.json_to_sheet(mcrRows(det)), 'RMLA');
+        X.utils.book_append_sheet(wb, X.utils.json_to_sheet((det.items || []).map((i) => ({ state: i.state, line: i.line_id, loan: i.loan_number, included: i.included, count: i.count, amount: +i.amount, reason: i.reason }))), 'Loans');
+        X.utils.book_append_sheet(wb, X.utils.json_to_sheet((det.findings || []).map((x) => ({ severity: x.severity, code: x.code, message: x.message, status: x.status }))), 'Findings');
+        const buf = X.write(wb, { type: 'array', bookType: 'xlsx' }); name = base + '.xlsx'; mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'; content = rcB64(buf); blob = new Blob([buf], { type: mime }); }
+      if (blob) rcDownload(name, blob, mime);
+      await rcDo('mcr_record_export', { p_filing: id, p: { kind, file_name: name, mime_type: mime, content, run_id: det.run.id, note: kind === 'xml' ? 'Diagnostic — not validated against MCRUploadSchemaV7.xsd' : kind === 'pdf' ? 'Printable review copy' : null } }, kind === 'xml' ? 'Diagnostic XML saved — not for upload until validated against the NMLS schema' : 'File saved with its hash', ['mcr']);
+    } catch (err) { toast('Could not create the file: ' + err.message); } return; }
+  if (d.mcrev) { const fi = document.getElementById('me-f'); const file = fi && fi.files[0]; const p = { kind: rcVal('me-k'), reference: rcVal('me-r') || null, description: rcVal('me-d') };
+    if (!p.description) return toast('Describe the evidence'); if (file) { if (file.size > 5e6) return toast('File too large (max 5 MB)'); const buf = await file.arrayBuffer(); p.file_name = file.name; p.mime_type = file.type || 'application/octet-stream'; p.content = rcB64(buf); }
+    return rcDo('mcr_add_evidence', { p_filing: d.mcrev, p }, 'Evidence added', ['mcr']); }
+  if (d.mcraudit) { try { const p = await rcRpc('mcr_audit_package', { p_filing: d.mcraudit }); const txt = JSON.stringify(p, null, 2); const h = await rcSha256(txt); const f = (RC.cache['mcrf:' + d.mcraudit] || {}).filing || {};
+      rcDownload(`MCR-Audit-${f.component || ''}-${f.year || ''}${f.quarter ? '-Q' + f.quarter : ''}-${new Date().toISOString().slice(0, 10)}.json`, txt, 'application/json'); rcDrop('mcr'); toast('MCR audit package generated · SHA-256 ' + h.slice(0, 12) + '…'); keepScroll(render); } catch (err) { toast('Could not generate: ' + err.message); } return; }
+  if (d.mcrimp) { const fi = document.getElementById('mcri-file'); const file = fi && fi.files[0]; if (!file) return toast('Choose the file'); const c = rcVal('mcri-c'); if (!c) return toast('Say what this file is'); const ref = rcVal('mcri-ref');
+    if (['submitted_report', 'accepted_filing'].includes(c) && !ref) return toast('A submitted or accepted filing needs the NMLS confirmation number — the file name is not evidence');
+    const buf = await file.arrayBuffer(); const sha = await rcSha256(buf); let parsed = { size: file.size };
+    try { if (/\.(xlsx|xls|csv)$/i.test(file.name)) { const X = await rcLoadXLSX(); const wb = X.read(buf, { type: 'array' }); parsed.sheets = wb.SheetNames; parsed.rows = X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, blankrows: false }).slice(0, 200); } else parsed.text = new TextDecoder().decode(buf).slice(0, 20000); } catch (err) { parsed.parse_error = err.message; }
+    return rcDo('mcr_import', { p_org: rcOrg(), p: { file_name: file.name, sha256: sha, year: +rcVal('mcri-y'), quarter: +rcVal('mcri-q'), classification: c, classification_evidence: ref ? { reference: ref, entered_by_user: true } : null, parsed } }, 'Imported', ['mcr']); }
+  if (d.mcrext) { const [id, ref] = d.mcrext.split('|'); return rcDo('mcr_record_external_filing', { p_org: rcOrg(), p_import: id, p_kind: null, p_reference: ref, p_note: 'Filed outside the LOS' }, 'Recorded as filed (with the NMLS confirmation)', ['mcr']); }
+  if (d.fcsave) { const fld = rcVal('fc-f'); const amt = rcNum(rcVal('fc-a')); if (!fld || amt == null) return toast('Enter the field and the amount'); const ev = rcVal('fc-e'); if (!ev) return toast('Enter the evidence');
+    return rcDo('mcr_record_fc_value', { p_org: rcOrg(), p_year: +d.fcsave, p_field: fld, p_amount: amt, p_source: rcVal('fc-s'), p_evidence: ev, p_supersedes: null, p_reason: null }, 'Value recorded', ['mcr']); }
+  if (d.mcrreg) { const [id, dec] = d.mcrreg.split('|'); return rcDo('mcr_reg_decide', { p_org: rcOrg(), p_change: id, p_decision: dec, p_note: null }, 'Decision recorded', ['mcr']); }
+});
+document.addEventListener('change', (e) => { const d = e.target.dataset || {};
+  if (d.bcstage) { const l = loan(S.loanId); rcDo('bc_set_stage', { p_loan: d.bcstage, p_stage: e.target.value, p_reason: null }, 'Stage: ' + rcLbl(e.target.value), ['ov:' + l.dbId, 'bcdash']); }
+  if (d.bcf) { S.bcF[d.bcf] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; keepScroll(render); }
+  if (d.mcrm === 'y') { S.mcrM.y = +e.target.value; S.mcrM.f = null; keepScroll(render); } });
+document.addEventListener('input', (e) => { const d = e.target.dataset || {}; if (d.bcf === 'q') { S.bcF.q = e.target.value; clearTimeout(RC.qt); RC.qt = setTimeout(() => { keepScroll(render); const el = document.querySelector('[data-bcf="q"]'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 350); } });
 
 // ================================================================ Layout: side menu only (no top menu), fixed side menu, dashboard that fits the screen
 // On a computer screen (wider than 1100px) the top menu links are hidden — the side menu has the same pages — and the
