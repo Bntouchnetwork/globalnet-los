@@ -105,7 +105,7 @@
       const realLoans = (rows || []).map((r) => toPreview(r, uiBy[r.id], borBy[r.id]));
       rows?.forEach((r) => { const l = realLoans.find((x) => x.dbId === r.id); snap.loans[r.id] = { core: JSON.stringify(coreOf(l)), ui: uiBy[r.id] ? JSON.stringify(uiBy[r.id].data) : '', borrower: borBy[r.id] ? l.borrower : '' }; });
       G.firstRun = !org?.data?.S;
-      try { localStorage.removeItem('gn-los-live'); if (!G.firstRun) localStorage.setItem('gn-los-live', JSON.stringify({ ...org.data.S, loans: realLoans })); localStorage.setItem('gn-los-role', G.uiRoles[0]); } catch {}
+      try { localStorage.removeItem('gn-los-live'); if (!G.firstRun) localStorage.setItem('gn-los-live', JSON.stringify({ ...org.data.S, loans: realLoans, view: 'dashboard', loanId: null, layer: null, panel: false }) /* always open on the dashboard: the saved page may belong to another role */); localStorage.setItem('gn-los-role', G.uiRoles[0]); } catch {}
       G.realLoans = realLoans; G.status = 'ready';
       // document provider (DocMagic or Propel): the company choice lives in organizations.settings, changed only through the audited RPC
       G.docLib = lib || [];

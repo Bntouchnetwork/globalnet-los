@@ -1592,6 +1592,7 @@ $('#role').value = role;
 // Seed history for the DSCR loan (already with the virtual processor) and the FN loan (completed by a human)
 function ensureHistory() {
   const d = S.loans.concat(S._sample || []).find((l) => l.id === 'GN100228');
+  if (!d) return; // the live LOS has the company's own loans, not the sample ones
   if (!d.assignment) {
     d.submissions = [{ v: 1, at: 'Oct 13, 4:02 PM', ready: true, items: Object.keys(d.docs).length }];
     d.assignment = { type: 'virtual', who: 'Virtual Processor', status: 'review', priority: 'High', due: 'Oct 20', sub: 1, notes: 'Lender wants lease before CTC' };
@@ -1603,7 +1604,7 @@ function ensureHistory() {
     d.notes = [{ who: 'Virtual Processor', at: 'Oct 13, 4:05 PM', body: 'Processing summary — Submission v1. LTV 80.00% · DSCR 1.17 · reserves 41.5 months. No blocking items. For attention: lease in file is unsigned; prepared a borrower request in Approvals (A-0409).' }];
   }
   const f = S.loans.concat(S._sample || []).find((l) => l.id === 'GN100219');
-  if (!f.assignment) {
+  if (f && !f.assignment) {
     f.submissions = [{ v: 3, at: 'Oct 09', ready: true, items: 9 }];
     f.assignment = { type: 'human', who: 'Maria Santos', status: 'completed', priority: 'Normal', due: 'Oct 12', sub: 3, notes: '' };
     f.events = [{ s: 'Completed', who: 'Maria Santos', at: 'Oct 10' }, { s: 'In review', who: 'Maria Santos', at: 'Oct 09' }, { s: 'Accepted', who: 'Maria Santos', at: 'Oct 09' }].reverse();
@@ -1978,6 +1979,7 @@ function render() {
   if (role === 'borrower' && S.view !== 'portal') S.view = 'portal';
   if (role !== 'borrower' && S.view === 'portal') S.view = 'dashboard';
   if (!['admin'].includes(role) && ['admin', 'audit', 'settings', 'qc', 'lenderlist'].includes(S.view)) S.view = 'dashboard';
+  if (typeof V[S.view] !== 'function') { S.view = role === 'borrower' ? 'portal' : 'dashboard'; S.loanId = null; } // unknown or not-yet-loaded page
   $('#app').innerHTML = `<div class="banner"><span><b>MVP preview</b> · sample data, fictional people · nothing is sent to any vendor or person</span><span class="muted">Phase 1 · Oct 15, 2026</span></div>` + V[S.view]();
   if (S.panel) panel(); else $('#layer').innerHTML = '';
   save();
