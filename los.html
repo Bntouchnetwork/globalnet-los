@@ -843,6 +843,29 @@ select { text-overflow: ellipsis; }
 .licard h3{margin:0}
 .licard .row{flex-wrap:wrap;gap:6px}
 @media (max-width:600px){.licards{grid-template-columns:1fr}}
+
+/* ---------------------------------------------------------------- GlobalNet AI (assistant panel, AI Usage) */
+.gnai{position:fixed;right:16px;bottom:16px;z-index:60}
+.gnai-fab{border:0;border-radius:999px;padding:10px 16px;font-weight:700;background:var(--acc,#2563eb);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer}
+.gnai.open{width:min(400px,calc(100vw - 32px));height:min(560px,calc(100vh - 32px));display:flex;flex-direction:column;background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);overflow:hidden}
+.gnai-head{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line,#ddd)}
+.gnai-head select{flex:1;min-width:0}
+.gnai-ctx{padding:6px 12px;border-bottom:1px solid var(--line,#ddd)}
+.gnai-body{flex:1;overflow:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.gnai-msg{padding:8px 10px;border-radius:10px;max-width:90%;font-size:.92rem;line-height:1.4;overflow-wrap:anywhere}
+.gnai-msg.user{align-self:flex-end;background:var(--acc,#2563eb);color:#fff}
+.gnai-msg.assistant{align-self:flex-start;background:var(--bg2,#f3f4f6)}
+.gnai-meta{font-size:.75rem;opacity:.75;margin-top:4px}
+.gnai-interim{padding:4px 12px;font-style:italic}
+.gnai-in{border-top:1px solid var(--line,#ddd);padding:8px;display:flex;flex-direction:column;gap:6px}
+.gnai-in textarea{width:100%;resize:none}
+.gnai-in .row{justify-content:flex-end}
+.aibar{position:relative;height:14px;border-radius:7px;background:var(--bg2,#eef0f3);overflow:hidden;margin:10px 0 6px}
+.aibar>span{display:block;height:100%;background:#16a34a}
+.aibar>span.acc{background:#ca8a04}.aibar>span.warn{background:#ea580c}.aibar>span.bad{background:#dc2626}
+.aibar>i{position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,.35)}
+.bad-t{color:#dc2626}
+@media print{.gnai{display:none}}
 </style>
 
 <div class="theme-toggle" role="group" aria-label="Color mode">
@@ -7621,6 +7644,168 @@ document.addEventListener('click', async (e) => {
 });
 document.addEventListener('change', (e) => { const d = e.target.dataset || {}; if (d.lif && d.lif !== 'q' && d.lif !== 'state') { S.liF[d.lif] = e.target.value; keepScroll(render); } });
 document.addEventListener('input', (e) => { const d = e.target.dataset || {}; if (d.lif === 'q' || d.lif === 'state') { S.liF[d.lif] = d.lif === 'state' ? e.target.value.toUpperCase() : e.target.value; clearTimeout(RC.lit); RC.lit = setTimeout(() => { keepScroll(render); const el = document.querySelector(`[data-lif="${d.lif}"]`); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 350); } });
+
+// ================================================================ GlobalNet AI Core — assistant panel, Broker Portal › AI Usage, Global Admin › AI Cost Management
+// The assistant talks to the ai-chat Edge Function (Anthropic / OpenAI through the AI Core, credits reserved and settled per call).
+// Conversations are not kept in browser storage (they can contain loan details); the server keeps them owner-only.
+const AIA = { open: false, agent: null, conv: {}, msgs: {}, busy: false, rec: null, interim: '', agents: null };
+const AI_AGENT_NAMES = { global_admin: 'Global Admin AI', compliance: 'Compliance Agent', broker: 'Broker Agent', loan_officer: 'Loan Officer Agent', partner: 'Partner Agent', client: 'Client Agent' };
+const aiAgentsFor = () => AIA.agents || (role === 'platform' ? ['global_admin'] : role === 'admin' ? ['loan_officer', 'broker', 'compliance'] : role === 'borrower' ? ['client'] : ['loan_officer']);
+const aiLoanId = () => { const l = S.loanId && typeof loan === 'function' ? loan(S.loanId) : null; return l && l.dbId ? l.dbId : null; };
+
+function aiPanelHTML() {
+  const ags = aiAgentsFor(); const ag = AIA.agent && ags.includes(AIA.agent) ? AIA.agent : ags[0]; AIA.agent = ag; const key = ag + '|' + (aiLoanId() || ''); const M = AIA.msgs[key] || [];
+  const l = S.loanId && typeof loan === 'function' ? loan(S.loanId) : null;
+  return `<div class="gnai-head"><b>GlobalNet AI</b><select id="gnai-ag" aria-label="Assistant">${ags.map((a) => `<option value="${a}" ${a === ag ? 'selected' : ''}>${esc(AI_AGENT_NAMES[a] || a)}</option>`).join('')}</select><button class="btn sm" data-gnai="close" aria-label="Close">×</button></div>
+    <div class="gnai-ctx small muted">${l && ['loan_officer', 'client'].includes(ag) ? `Using loan ${esc(l.id)}` : 'General'} · answers are suggestions; actions need your approval in the LOS</div>
+    <div class="gnai-body" id="gnai-body">${M.map((m) => `<div class="gnai-msg ${m.role}">${m.role === 'assistant' ? esc(m.content).replace(/\n/g, '<br>') : esc(m.content)}${m.meta ? `<div class="gnai-meta">${esc(m.meta)}</div>` : ''}${(m.citations || []).length ? `<div class="gnai-meta">${m.citations.map((c) => `<a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">${esc(c.title || c.url)}</a>`).join(' · ')}</div>` : ''}</div>`).join('') || '<p class="muted small">Ask about a loan, conditions, lenders, compliance deadlines or AI usage. Do not type SSNs or account numbers.</p>'}
+      ${AIA.busy ? '<div class="gnai-msg assistant muted">Thinking…</div>' : ''}</div>
+    ${AIA.interim ? `<div class="gnai-interim small">🎙 ${esc(AIA.interim)}</div>` : ''}
+    <div class="gnai-in"><textarea id="gnai-t" rows="2" placeholder="Type or use the microphone"></textarea><div class="row"><button class="btn sm ${AIA.rec ? 'pri' : ''}" data-gnai="mic" title="Voice (live transcription)">${AIA.rec ? '■ Stop' : '🎙'}</button><button class="btn sm pri" data-gnai="send" ${AIA.busy ? 'disabled' : ''}>Send</button></div></div>`;
+}
+function aiPanelRender(keepText) {
+  let p = document.getElementById('gnai'); if (!rcLive() || role === 'borrower' && !window.GN_LIVE) { if (p) p.remove(); return; }
+  if (!p) { p = document.createElement('div'); p.id = 'gnai'; document.body.appendChild(p); }
+  const t = keepText ? (document.getElementById('gnai-t')?.value || '') : '';
+  p.className = AIA.open ? 'gnai open' : 'gnai';
+  p.innerHTML = AIA.open ? aiPanelHTML() : '<button class="gnai-fab" data-gnai="open" aria-label="Open GlobalNet AI">✦ AI</button>';
+  if (AIA.open) { const ta = document.getElementById('gnai-t'); if (ta) { ta.value = t; } const b = document.getElementById('gnai-body'); if (b) b.scrollTop = b.scrollHeight; }
+}
+{ const r0 = render; render = function () { const out = r0.apply(this, arguments); try { aiPanelRender(true); } catch (e) { console.error(e); } return out; }; }
+
+async function aiSend() {
+  const ta = document.getElementById('gnai-t'); const text = (ta?.value || '').trim(); if (!text || AIA.busy) return;
+  if (/\b\d{3}-?\d{2}-?\d{4}\b/.test(text)) return toast('That looks like an SSN. Remove it before sending.');
+  const ag = AIA.agent; const lid = aiLoanId(); const key = ag + '|' + (lid || ''); (AIA.msgs[key] = AIA.msgs[key] || []).push({ role: 'user', content: text });
+  if (ta) ta.value = ''; AIA.busy = true; aiPanelRender();
+  try {
+    const { data, error } = await window.GN_LIVE.sb.functions.invoke('ai-chat', { body: { message: text, agent: ag, loan_id: lid, conversation_id: AIA.conv[key] || null, org_id: window.GN_LIVE.orgId } });
+    let d = data; if (error) { try { d = await error.context.json(); } catch { d = { error: error.message }; } }
+    if (d?.agents) AIA.agents = d.agents.filter((a) => AI_AGENT_NAMES[a]);
+    if (d?.conversation_id) AIA.conv[key] = d.conversation_id;
+    if (d?.answer) AIA.msgs[key].push({ role: 'assistant', content: d.answer, citations: d.citations, meta: `${d.provider} · ${d.model}${d.credits != null ? ' · ' + d.credits + ' credit(s)' : ''}${d.fallback ? ' · fallback used' : ''}` });
+    else AIA.msgs[key].push({ role: 'assistant', content: (d?.blocked ? 'Not sent: ' : 'Could not answer: ') + (d?.error || 'unknown error'), meta: d?.blocked ? 'See AI Usage for credits and plan' : '' });
+  } catch (e) { AIA.msgs[key].push({ role: 'assistant', content: 'Could not reach the assistant: ' + (e.message || e) }); }
+  AIA.busy = false; aiPanelRender(); rcDrop('aiusage');
+}
+function aiMic() {
+  if (AIA.rec) { try { AIA.rec.stop(); } catch { /* */ } AIA.rec = null; AIA.interim = ''; return aiPanelRender(true); }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return toast('Voice input is not supported in this browser — use Chrome or Edge');
+  const r = new SR(); r.lang = document.documentElement.lang === 'pt' ? 'pt-BR' : navigator.language || 'en-US'; r.interimResults = true; r.continuous = true;
+  r.onresult = (ev) => { let fin = ''; let inter = ''; for (let i = ev.resultIndex; i < ev.results.length; i++) { const t = ev.results[i][0].transcript; if (ev.results[i].isFinal) fin += t; else inter += t; }
+    const ta = document.getElementById('gnai-t'); if (fin && ta) ta.value = (ta.value + ' ' + fin).trim(); AIA.interim = inter; const el = document.querySelector('.gnai-interim'); if (el) el.textContent = '🎙 ' + inter; else if (inter) aiPanelRender(true); };
+  r.onend = () => { if (AIA.rec === r) { AIA.rec = null; AIA.interim = ''; aiPanelRender(true); } };
+  r.onerror = (e) => { toast('Microphone: ' + (e.error || 'error')); };
+  AIA.rec = r; r.start(); aiPanelRender(true);
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-gnai]'); if (!b) return; const a = b.dataset.gnai;
+  if (a === 'open') { AIA.open = true; aiPanelRender(); setTimeout(() => document.getElementById('gnai-t')?.focus()); }
+  else if (a === 'close') { AIA.open = false; if (AIA.rec) { try { AIA.rec.stop(); } catch { /* */ } AIA.rec = null; } aiPanelRender(); }
+  else if (a === 'send') aiSend(); else if (a === 'mic') aiMic(); });
+document.addEventListener('change', (e) => { if (e.target.id === 'gnai-ag') { AIA.agent = e.target.value; aiPanelRender(); } });
+document.addEventListener('keydown', (e) => { if (e.target.id === 'gnai-t' && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiSend(); } });
+
+// ---------------------------------------------------------------- Broker Portal › AI Usage
+{ const n0 = nav; nav = function () { n0(); if (!['admin', 'lo'].includes(role) || !rcLive() || $('#nav [data-go="aiusage"]') || (S.view === 'loan' && S.loanId)) return;
+  const after = $('#nav [data-go="reports"]') || $('#nav [data-go="contacts"]'); after?.insertAdjacentHTML('afterend', `<button data-go="aiusage" class="${S.view === 'aiusage' ? 'on' : ''}"><span>AI Usage</span></button>`); }; }
+V.aiusage = () => {
+  const top = `<div class="top"><div><h1>AI Usage</h1><p class="muted">Your AI plan, credits and how they were used. Essential LOS features keep working when credits run out.</p></div></div>`;
+  if (!rcLive()) return top + rcOffline('AI Usage');
+  const key = 'aiusage'; const D = rcGet(key, () => rcRpc('ai_usage', { p_org: rcOrg() }));
+  if (!D) return top + `<div class="card">${rcLoading(key)}</div>`;
+  const w = D.wallet; const total = w.included_credits + w.purchased_credits; const used = +w.used_credits; const pct = total ? Math.min(100, Math.round(100 * used / total)) : 100;
+  const tbl = (rows, cols) => `<div class="tw"><table><thead><tr>${cols.map(([, n, num]) => `<th${num ? ' class="num"' : ''}>${n}</th>`).join('')}</tr></thead><tbody>${(rows || []).map((r) => `<tr>${cols.map(([k, , num]) => `<td${num ? ' class="num"' : ''}>${esc(r[k] ?? '—')}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length}" class="muted">No usage yet this period.</td></tr>`}</tbody></table></div>`;
+  return top + `<div class="card"><div class="spread"><div><h2>${esc(D.plan.name)}</h2><p class="small muted">Period ${rcD(w.period_start)} – ${rcD(w.period_end)} · ${total.toLocaleString()} credits (${w.included_credits.toLocaleString()} included${w.purchased_credits ? ' + ' + w.purchased_credits.toLocaleString() + ' purchased' : ''})${w.overage_authorized ? ` · extra usage authorized up to ${w.overage_cap.toLocaleString()}` : ''}</p></div>
+      <div class="num"><b style="font-size:1.6rem">${Math.max(0, Math.floor(+D.available)).toLocaleString()}</b><div class="small muted">credits available</div></div></div>
+    <div class="aibar" role="meter" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Credits used"><span style="width:${pct}%" class="${pct >= 100 ? 'bad' : pct >= 90 ? 'warn' : pct >= 70 ? 'acc' : 'ok'}"></span><i style="left:70%"></i><i style="left:90%"></i></div>
+    <p class="small">${Math.round(used).toLocaleString()} used (${pct}%) · ${Math.round(+w.reserved_credits)} reserved for tasks in progress${pct >= 100 ? ' · <b class="bad-t">AI requests are paused until credits are added or extra usage is authorized.</b>' : pct >= 90 ? ' · <b>90% used</b>' : pct >= 70 ? ' · 70% used' : ''}</p></div>
+  ${D.is_admin ? `<div class="card"><h2>Add credits or upgrade</h2><div class="fg">
+      <label>Credit packs (${D.plan.credit_pack_size.toLocaleString()} credits${+D.plan.credit_pack_price ? ' · ' + usd(+D.plan.credit_pack_price, 2) + ' each' : ''})<span class="row"><input id="ai-packs" type="number" min="1" max="100" value="1" style="width:80px"><button class="btn sm" data-aiu="packs">Request</button></span></label>
+      <label>Upgrade plan<span class="row"><select id="ai-plan">${(D.plans || []).filter((p) => p.code !== D.plan.code).map((p) => `<option value="${p.code}">${esc(p.name)} — ${p.included_credits.toLocaleString()} credits${+p.monthly_price ? ' · ' + usd(+p.monthly_price, 2) + '/mo' : ''}</option>`).join('')}</select><button class="btn sm" data-aiu="upgrade">Request</button></span></label>
+      <label>Authorize extra usage beyond the balance (billed)<span class="row"><input id="ai-cap" type="number" min="0" max="100000" value="${w.overage_cap}" style="width:110px"><button class="btn sm" data-aiu="overage">Save</button></span></label></div>
+    <p class="muted small">Purchases and upgrades are applied only after the payment processor confirms the payment. ${(D.purchases || []).filter((p) => p.status !== 'paid').length ? `${(D.purchases || []).filter((p) => p.status !== 'paid').length} request(s) waiting for payment.` : ''}</p></div>` : ''}
+  <div class="grid g2">${D.is_admin ? `<div class="card"><h2>By loan officer / user</h2>${tbl((D.by_user || []).map((x) => ({ ...x, name: x.name || 'Background tasks' })), [['name', 'User'], ['requests', 'Requests', 1], ['credits', 'Credits', 1]])}</div>` : ''}
+    <div class="card"><h2>By agent</h2>${tbl((D.by_agent || []).map((x) => ({ ...x, agent: AI_AGENT_NAMES[x.agent] || rcLbl(x.agent) })), [['agent', 'Agent'], ['requests', 'Requests', 1], ['credits', 'Credits', 1]])}</div>
+    <div class="card"><h2>By model</h2>${tbl((D.by_model || []).map((x) => ({ ...x, m: x.provider + ' · ' + x.model })), [['m', 'Model'], ['requests', 'Requests', 1], ['credits', 'Credits', 1]])}</div>
+    <div class="card"><h2>By operation</h2>${tbl((D.by_operation || []).map((x) => ({ ...x, operation: rcLbl(x.operation) })), [['operation', 'Operation'], ['requests', 'Requests', 1], ['credits', 'Credits', 1]])}</div></div>
+  <div class="card"><h2>Recent AI requests</h2><div class="tw"><table><thead><tr><th>When</th><th>User</th><th>Agent</th><th>Operation</th><th>Model</th><th>Status</th><th class="num">Credits</th></tr></thead><tbody>${(D.recent || []).map((r) => `<tr><td class="small">${rcDT(r.at)}</td><td class="small">${esc(r.user || '—')}</td><td>${esc(AI_AGENT_NAMES[r.agent] || rcLbl(r.agent))}</td><td>${esc(rcLbl(r.operation))}</td><td class="small">${esc(r.model || '')}</td><td>${rcPill(r.status, { succeeded: 'ok', reserved: 'info', failed: 'warn', blocked: 'bad' })}${r.block_reason ? `<div class="small muted">${esc(r.block_reason)}</div>` : ''}</td><td class="num">${r.credits ?? '—'}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">No requests yet.</td></tr>'}</tbody></table></div></div>
+  ${D.is_admin && (D.alerts || []).length ? `<div class="card"><h2>Alerts</h2><ul class="small">${D.alerts.map((a) => `<li>${rcDT(a.created_at)} — ${esc(a.message)}</li>`).join('')}</ul></div>` : ''}
+  <div class="card"><h2>Agents in your plan</h2><div class="tw"><table><tbody>${(D.agents || []).map((a) => `<tr><td><b>${esc(a.name)}</b><div class="small muted">${esc(a.description || '')}</div></td><td>${a.included ? '<span class="pill ok">Included</span>' : '<span class="pill">Not in plan</span>'}</td></tr>`).join('')}</tbody></table></div></div>`;
+};
+
+// ---------------------------------------------------------------- Global Admin › AI Cost Management
+PVIEWS.push('paicost');
+{ const n0 = nav; nav = function () { n0(); if (role !== 'platform' || !S.pAuth || $('#nav [data-go="paicost"]')) return;
+  $('#nav').insertAdjacentHTML('beforeend', `<button data-go="paicost" class="${S.view === 'paicost' ? 'on' : ''}"><span>AI Cost Management</span></button>`); }; }
+V.paicost = () => {
+  const top = `<div class="top"><div><h1>AI Cost Management</h1><p class="muted">Providers, models, agents, AI plans and credits — Anthropic and OpenAI costs against subscription revenue.</p></div></div>`;
+  if (!rcLive()) return top + rcOffline('AI Cost Management');
+  const days = S.aicDays || 30; const key = 'aicost:' + days; const D = rcGet(key, () => rcRpc('ai_admin_overview', { p_days: days }));
+  if (!D) return top + `<div class="card">${rcLoading(key)}</div>`;
+  const t = S.aicTab || 'overview'; const T = D.totals || {}; const rev = +T.revenue_usd || 0; const cost = +T.provider_cost_usd || 0;
+  const tabs = `<nav class="tabs" role="tablist">${[['overview', 'Costs & margins'], ['providers', 'Providers & models'], ['agents', 'Agents'], ['plans', 'Plans & credits'], ['billing', 'Billing']].map(([k, n]) => `<button role="tab" class="${t === k ? 'on' : ''}" data-aict="${k}">${n}</button>`).join('')}</nav>`;
+  const models = (prov) => (D.models || []).filter((m) => m.provider === prov && m.active);
+  let b = '';
+  if (t === 'overview') b = `<div class="row small"><label>Period<select data-aicdays="1">${[7, 30, 90, 365].map((d) => `<option value="${d}" ${d === days ? 'selected' : ''}>Last ${d} days</option>`).join('')}</select></label></div>
+    <div class="grid g4 kpig">${kpi('Provider cost', usd(cost, 2), 'Anthropic + OpenAI')}${kpi('AI revenue', usd(rev, 2), 'verified payments')}${kpi('Margin', usd(rev - cost, 2), rev ? Math.round(100 * (rev - cost) / rev) + '%' : '—', null, rev - cost >= 0 ? 'ok' : 'warn')}${kpi('Requests', (+T.requests || 0).toLocaleString(), `${T.blocked || 0} blocked · ${T.failed || 0} failed`)}</div>
+    <div class="card"><h2>By brokerage</h2><div class="tw"><table><thead><tr><th>Brokerage</th><th>Plan</th><th class="num">Credits left</th><th class="num">Credits charged</th><th class="num">Provider cost</th><th class="num">Revenue</th><th class="num">Margin</th><th class="num">Requests</th><th></th></tr></thead><tbody>
+    ${(D.brokerages || []).map((o) => `<tr><td><b>${esc(o.name)}</b></td><td><select data-aicorg="${o.org_id}">${(D.plans || []).map((p) => `<option value="${p.code}" ${o.wallet?.plan_code === p.code ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></td><td class="num">${o.available != null ? Math.floor(+o.available).toLocaleString() : '—'}</td><td class="num">${(+o.credits_charged).toLocaleString()}</td><td class="num">${usd(+o.provider_cost_usd, 2)}</td><td class="num">${usd(+o.revenue_usd, 2)}</td><td class="num">${usd(+o.revenue_usd - +o.provider_cost_usd, 2)}</td><td class="num">${o.requests}</td><td>${o.wallet?.status === 'suspended' ? `<button class="btn sm" data-aicsusp="${o.org_id}|active">Resume AI</button>` : `<button class="btn sm" data-aicsusp="${o.org_id}|suspended">Suspend AI</button>`}</td></tr>`).join('')}</tbody></table></div><p class="muted small">Changing a plan here is a manual assignment (e.g. pilot, enterprise contract). Paid plans are normally applied by the verified payment event.</p></div>
+    <div class="grid g2"><div class="card"><h2>By provider and model</h2><div class="tw"><table><thead><tr><th>Model</th><th class="num">Requests</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr></thead><tbody>${(D.by_provider || []).map((x) => `<tr><td>${esc(x.provider)} · ${esc(x.model || '')}</td><td class="num">${x.requests}</td><td class="num small">${(+x.input_tokens || 0).toLocaleString()} / ${(+x.output_tokens || 0).toLocaleString()}</td><td class="num">${usd(+x.cost_usd || 0, 2)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No usage.</td></tr>'}</tbody></table></div></div>
+      <div class="card"><h2>By agent</h2><div class="tw"><table><thead><tr><th>Agent</th><th class="num">Requests</th><th class="num">Credits</th><th class="num">Cost</th></tr></thead><tbody>${(D.by_agent || []).map((x) => `<tr><td>${esc(x.agent)}</td><td class="num">${x.requests}</td><td class="num">${(+x.credits || 0).toLocaleString()}</td><td class="num">${usd(+x.cost_usd || 0, 2)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No usage.</td></tr>'}</tbody></table></div></div></div>
+    <div class="card"><h2>Abnormal usage and alerts</h2>${(D.alerts || []).length ? `<ul class="small">${D.alerts.map((a) => `<li><span class="pill ${/anomaly|blocked|100/.test(a.kind) ? 'warn' : 'info'}">${esc(rcLbl(a.kind))}</span> ${esc(a.org || 'Platform')} — ${esc(a.message)} <span class="muted">${rcDT(a.created_at)}</span></li>`).join('')}</ul>` : '<p class="muted small">No alerts.</p>'}</div>`;
+  else if (t === 'providers') b = `<div class="grid g2">${(D.providers || []).map((p) => `<div class="card"><div class="spread"><h2>${p.provider === 'anthropic' ? 'Anthropic (Claude)' : 'OpenAI (GPT)'}</h2>${rcPill(p.status, { ok: 'ok', error: 'bad', not_configured: 'warn', disabled: '' })}</div>
+      <p class="small">API key: ${p.key_set ? `stored in the Vault · ends in <b>${esc(p.key_last4 || '')}</b>` : '<span class="pill warn">not set</span>'}${p.last_ok_at ? ' · last success ' + rcDT(p.last_ok_at) : ''}${p.last_error ? `<br><span class="bad-t">${esc(p.last_error)}</span>` : ''}</p>
+      <div class="fg"><label style="grid-column:span 2">${p.key_set ? 'Replace' : 'Set'} API key (write-only — never shown again)<input id="aik-${p.provider}" type="password" autocomplete="off" spellcheck="false"></label></div>
+      <span class="row"><button class="btn sm pri" data-aickey="${p.provider}">Save key</button><label class="ck small"><input type="checkbox" data-aicprov="${p.provider}" ${p.enabled ? 'checked' : ''}> Enabled</label></span></div>`).join('')}</div>
+    <div class="card"><h2>Models and prices</h2><p class="muted small">Enter each model's current price from the provider's pricing page (USD per million tokens). Credits charged = provider cost × markup ÷ credit value. A model without a price is charged the minimum credit only.</p>
+      <div class="tw"><table><thead><tr><th>Provider</th><th>Model ID</th><th>Label</th><th class="num">Input $/M</th><th class="num">Output $/M</th><th>Web search</th><th>Active</th><th></th></tr></thead><tbody>
+      ${(D.models || []).map((m, i) => `<tr><td>${esc(m.provider)}</td><td><code>${esc(m.model)}</code></td><td><input id="aim-l-${i}" value="${esc(m.label || '')}"></td><td><input id="aim-i-${i}" inputmode="decimal" value="${m.input_usd_per_mtok ?? ''}" style="width:80px"></td><td><input id="aim-o-${i}" inputmode="decimal" value="${m.output_usd_per_mtok ?? ''}" style="width:80px"></td><td><input type="checkbox" id="aim-w-${i}" ${m.supports_web_search ? 'checked' : ''}></td><td><input type="checkbox" id="aim-a-${i}" ${m.active ? 'checked' : ''}></td><td><button class="btn sm" data-aicmodel="${i}">Save</button></td></tr>`).join('')}
+      <tr><td><select id="aim-np"><option>anthropic</option><option>openai</option></select></td><td><input id="aim-nm" placeholder="exact model ID from the provider"></td><td><input id="aim-nl"></td><td><input id="aim-ni" inputmode="decimal" style="width:80px"></td><td><input id="aim-no" inputmode="decimal" style="width:80px"></td><td><input type="checkbox" id="aim-nw"></td><td></td><td><button class="btn sm pri" data-aicmodel="new">Add</button></td></tr></tbody></table></div></div>
+    <div class="card"><h2>Credit settings</h2><div class="fg"><label>Credit value (USD per credit)<input id="ais-v" inputmode="decimal" value="${D.settings.credit_usd_value}"></label><label>Markup on provider cost<input id="ais-m" inputmode="decimal" value="${D.settings.cost_markup}"></label><label>Minimum credits per request<input id="ais-min" inputmode="numeric" value="${D.settings.min_credits_per_request}"></label>
+      <label>Flag a request above N× average<input id="ais-a" inputmode="decimal" value="${D.settings.anomaly_multiplier}"></label><label>Flag a brokerage above credits/day<input id="ais-d" inputmode="numeric" value="${D.settings.daily_org_credit_alert}"></label></div><button class="btn sm pri" data-aicset="1">Save settings</button></div>`;
+  else if (t === 'agents') b = `<div class="card"><h2>Agents</h2><p class="muted small">Each agent has its own scope, model and permitted fallback. Fallback is used only when the primary provider fails (overload, outage) — never for research that needs web search with sources.</p>
+    <div class="tw"><table><thead><tr><th>Agent</th><th>Scope</th><th>Primary</th><th>Fallback</th><th>Allowed</th><th>Needs human approval</th><th>On</th><th></th></tr></thead><tbody>
+    ${(D.agents || []).map((a) => `<tr><td><b>${esc(a.name)}</b><div class="small muted">${esc(a.description || '')}</div></td><td>${esc(rcLbl(a.scope))}</td>
+      <td><select id="aia-p-${a.code}">${(D.models || []).filter((m) => m.active).map((m) => `<option value="${m.provider}|${m.model}" ${a.primary_provider === m.provider && a.primary_model === m.model ? 'selected' : ''}>${esc(m.provider)} · ${esc(m.model)}</option>`).join('')}</select></td>
+      <td><select id="aia-f-${a.code}"><option value="">None</option>${(D.models || []).filter((m) => m.active).map((m) => `<option value="${m.provider}|${m.model}" ${a.fallback_provider === m.provider && a.fallback_model === m.model ? 'selected' : ''}>${esc(m.provider)} · ${esc(m.model)}</option>`).join('')}</select></td>
+      <td><input type="checkbox" id="aia-fa-${a.code}" ${a.fallback_allowed ? 'checked' : ''} title="Fallback allowed"></td><td class="small">${esc((a.approval_required || []).map(rcLbl).join(', ') || '—')}</td><td><input type="checkbox" id="aia-e-${a.code}" ${a.enabled ? 'checked' : ''}></td><td><button class="btn sm" data-aicagent="${a.code}">Save</button></td></tr>`).join('')}</tbody></table></div>
+    <p class="muted small">Broker and Loan Officer agents run one isolated instance per brokerage / per MLO (their data access follows the user's own permissions). Lender portal sub-agents (registration, sign-up, Comergence, TPO) are part of the Broker Agent and arrive with the onboarding and TPO phases. The Partner Agent becomes available when partner accounts are enabled.</p></div>`;
+  else if (t === 'plans') b = `<div class="card"><h2>AI subscription plans</h2><p class="muted small">Prices, credits, agents and limits are yours to set. Basic AI includes a small number of credits for first use. When credits run out, AI requests pause (unless the broker admin authorized extra usage); the rest of the LOS keeps working.</p>
+    <div class="grid g2">${(D.plans || []).map((p) => `<div class="card sub"><h3>${esc(p.name)}</h3><div class="fg"><label>Monthly price<input id="aip-p-${p.code}" inputmode="decimal" value="${p.monthly_price}"></label><label>Included credits<input id="aip-c-${p.code}" inputmode="numeric" value="${p.included_credits}"></label>
+      <label>Credit pack size<input id="aip-ps-${p.code}" inputmode="numeric" value="${p.credit_pack_size}"></label><label>Credit pack price<input id="aip-pp-${p.code}" inputmode="decimal" value="${p.credit_pack_price}"></label>
+      <label style="grid-column:span 2">Agents<span class="row" style="flex-wrap:wrap">${(D.agents || []).map((a) => `<label class="ck small"><input type="checkbox" data-aipag="${p.code}|${a.code}" ${(p.agents || []).includes(a.code) ? 'checked' : ''}> ${esc(a.name)}</label>`).join('')}</span></label>
+      <label style="grid-column:span 2">Limits (JSON)<input id="aip-l-${p.code}" value="${esc(JSON.stringify(p.limits || {}))}"></label><label style="grid-column:span 2">Capabilities (JSON)<input id="aip-k-${p.code}" value="${esc(JSON.stringify(p.capabilities || {}))}"></label>
+      <label class="ck"><input type="checkbox" id="aip-a-${p.code}" ${p.active ? 'checked' : ''}> Active</label></div><button class="btn sm pri" data-aicplan="${p.code}">Save plan</button></div>`).join('')}</div></div>`;
+  else b = `<div class="card"><h2>Purchase and upgrade requests</h2><div class="tw"><table><thead><tr><th>When</th><th>Brokerage</th><th>Request</th><th>Status</th></tr></thead><tbody>${(D.purchases || []).map((p) => `<tr><td class="small">${rcDT(p.created_at)}</td><td>${esc(p.org)}</td><td>${p.kind === 'upgrade' ? 'Upgrade to ' + esc(p.plan_code) : p.packs + ' credit pack(s)'}</td><td>${esc(rcLbl(p.status))}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">None waiting.</td></tr>'}</tbody></table></div>
+      <p class="muted small">Requests are fulfilled through the payment processor (Stripe checkout). Credits and plan changes are applied only by the verified payment webhook — never by hand from this page.</p></div>
+    <div class="card"><h2>Verified billing events</h2><div class="tw"><table><thead><tr><th>Received</th><th>Processor</th><th>Event</th><th>Kind</th><th class="num">Amount</th><th class="num">Credits</th></tr></thead><tbody>${(D.billing_events || []).map((e) => `<tr><td class="small">${rcDT(e.received_at)}</td><td>${esc(e.processor)}</td><td class="small"><code>${esc(e.event_id)}</code></td><td>${esc(rcLbl(e.kind))}</td><td class="num">${usd(+e.amount_usd, 2)}</td><td class="num">${e.credits || ''}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No payments yet — the Stripe webhook is not connected.</td></tr>'}</tbody></table></div></div>`;
+  return top + tabs + b;
+};
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-aiu],[data-aict],[data-aickey],[data-aicmodel],[data-aicset],[data-aicagent],[data-aicplan],[data-aicsusp]'); if (!b) return; const d = b.dataset; const drops = ['aiusage', 'aicost:'];
+  if (d.aiu === 'packs') return rcDo('ai_request_purchase', { p_org: rcOrg(), p_kind: 'credit_pack', p_plan: null, p_packs: +rcVal('ai-packs') }, 'Request sent — credits are added when the payment is confirmed', drops);
+  if (d.aiu === 'upgrade') return rcDo('ai_request_purchase', { p_org: rcOrg(), p_kind: 'upgrade', p_plan: rcVal('ai-plan'), p_packs: null }, 'Upgrade requested — applied when the payment is confirmed', drops);
+  if (d.aiu === 'overage') return rcDo('ai_authorize_overage', { p_org: rcOrg(), p_cap: +rcVal('ai-cap') || 0, p_note: 'Set in AI Usage' }, 'Extra usage setting saved', drops);
+  if (d.aict) { S.aicTab = d.aict; return keepScroll(render); }
+  if (d.aickey) { const el = document.getElementById('aik-' + d.aickey); const k = el?.value || ''; if (!k.trim()) return toast('Paste the API key');
+    const r = await rcDo('ai_set_provider_key', { p_provider: d.aickey, p_key: k }, 'Key stored in the Vault', drops); if (el) el.value = ''; return r; }
+  if (d.aicmodel !== undefined) { const D = RC.cache['aicost:' + (S.aicDays || 30)]; let p;
+    if (d.aicmodel === 'new') { p = { provider: rcVal('aim-np'), model: rcVal('aim-nm'), label: rcVal('aim-nl') || null, input_usd_per_mtok: rcNum(rcVal('aim-ni')), output_usd_per_mtok: rcNum(rcVal('aim-no')), supports_web_search: rcVal('aim-nw'), active: true }; if (!p.model) return toast('Enter the model ID'); }
+    else { const m = D.models[+d.aicmodel]; const i = d.aicmodel; p = { provider: m.provider, model: m.model, label: rcVal('aim-l-' + i) || null, input_usd_per_mtok: rcNum(rcVal('aim-i-' + i)), output_usd_per_mtok: rcNum(rcVal('aim-o-' + i)), supports_web_search: rcVal('aim-w-' + i), active: rcVal('aim-a-' + i) }; }
+    return rcDo('ai_admin_save', { p_kind: 'model', p }, 'Model saved', drops); }
+  if (d.aicset) return rcDo('ai_admin_save', { p_kind: 'settings', p: { credit_usd_value: rcNum(rcVal('ais-v')), cost_markup: rcNum(rcVal('ais-m')), min_credits_per_request: rcNum(rcVal('ais-min')), anomaly_multiplier: rcNum(rcVal('ais-a')), daily_org_credit_alert: rcNum(rcVal('ais-d')) } }, 'Settings saved', drops);
+  if (d.aicagent) { const c = d.aicagent; const [pp, pm] = rcVal('aia-p-' + c).split('|'); const f = rcVal('aia-f-' + c); const [fp, fm] = f ? f.split('|') : ['', ''];
+    return rcDo('ai_admin_save', { p_kind: 'agent', p: { code: c, primary_provider: pp, primary_model: pm, fallback_provider: fp, fallback_model: fm, fallback_allowed: rcVal('aia-fa-' + c) && !!f, enabled: rcVal('aia-e-' + c) } }, 'Agent saved', drops); }
+  if (d.aicplan) { const c = d.aicplan; let lim, cap; try { lim = JSON.parse(rcVal('aip-l-' + c) || '{}'); cap = JSON.parse(rcVal('aip-k-' + c) || '{}'); } catch { return toast('Limits and capabilities must be valid JSON'); }
+    const agents = [...document.querySelectorAll(`[data-aipag^="${c}|"]`)].filter((x) => x.checked).map((x) => x.dataset.aipag.split('|')[1]);
+    return rcDo('ai_admin_save', { p_kind: 'plan', p: { code: c, monthly_price: rcNum(rcVal('aip-p-' + c)), included_credits: rcNum(rcVal('aip-c-' + c)), credit_pack_size: rcNum(rcVal('aip-ps-' + c)), credit_pack_price: rcNum(rcVal('aip-pp-' + c)), agents, limits: lim, capabilities: cap, active: rcVal('aip-a-' + c) } }, 'Plan saved', drops); }
+  if (d.aicsusp) { const [o, st] = d.aicsusp.split('|'); return rcDo('ai_admin_save', { p_kind: 'org_plan', p: { org_id: o, status: st, reason: st === 'suspended' ? 'Suspended in AI Cost Management' : 'Resumed' } }, st === 'suspended' ? 'AI suspended for that brokerage' : 'AI resumed', drops); }
+});
+document.addEventListener('change', (e) => { const d = e.target.dataset || {};
+  if (d.aicdays) { S.aicDays = +e.target.value; keepScroll(render); }
+  if (d.aicprov) rcDo('ai_admin_save', { p_kind: 'provider', p: { provider: d.aicprov, enabled: e.target.checked } }, 'Provider ' + (e.target.checked ? 'enabled' : 'disabled'), ['aicost:']);
+  if (d.aicorg) rcDo('ai_admin_save', { p_kind: 'org_plan', p: { org_id: d.aicorg, plan_code: e.target.value, reason: 'Assigned in AI Cost Management' } }, 'Plan assigned', ['aicost:']); });
 
 // ================================================================ Layout: side menu only (no top menu), fixed side menu, dashboard that fits the screen
 // On a computer screen (wider than 1100px) the top menu links are hidden — the side menu has the same pages — and the
