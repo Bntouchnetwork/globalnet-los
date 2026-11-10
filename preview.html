@@ -778,6 +778,48 @@ select { text-overflow: ellipsis; }
 .docprov.on{border-color:var(--brand,#1f4fbf);box-shadow:0 0 0 1px var(--brand,#1f4fbf) inset}
 .docprov input{margin-top:3px}
 .docprov .dp-b{display:flex;flex-direction:column;gap:6px;min-width:0}
+
+/* ===== Layout: side menu only, fixed side menu, dashboard fits the screen (computer screens) ===== */
+@media (min-width: 1101px) {
+  /* top menu: links removed (same pages are in the side menu); tools stay at the top right */
+  .topnav > button { display: none; }
+  .topnav { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); right: 182px; z-index: 25; margin: 0; border: 0; padding: 0; background: none; align-items: center; }
+  .topnav .tbtools { padding-bottom: 0; }
+  .main { padding-top: 12px; }
+  #app > .banner { margin-right: 420px; min-height: 40px; align-items: center; }
+  /* side menu: fixed, no scrolling — spacing shrinks with the window height so every item fits */
+  .rail { overflow: hidden; padding: 12px 10px; gap: 2px; }
+  .rail .logo { padding: 0 6px 8px; }
+  .rail .nav { display: flex; flex-direction: column; min-height: 0; }
+  .rail .nav > * { flex-shrink: 0; }
+  .rail .nav .sec { line-height: 1.2; }
+  .rail .nav button { padding-block: clamp(1px, calc((100vh - 600px) / 44), 8px); font-size: clamp(.8rem, calc(.45rem + .55vh), .95rem); }
+  .rail .nav .sec { padding: clamp(4px, calc((100vh - 600px) / 40), 12px) 10px 2px; }
+  .rail .foot { padding: 8px 4px 0; gap: 6px; flex-direction: row; flex-wrap: wrap; }
+  .rail .foot label { flex: 1 1 100%; }
+  .rail .foot .btn { flex: 1 1 0; width: auto; min-width: 0; padding-inline: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+@media (min-width: 1561px) { #app > .banner { margin-right: 545px; } }
+@media (min-width: 1101px) and (max-height: 720px) { .rail .logo span { display: none; } }
+/* dashboard: one screen, no page scrolling */
+@media (min-width: 1101px) and (min-height: 600px) {
+  html:has(body.dashfit), body.dashfit { overflow: hidden; height: 100%; }
+  body.dashfit { margin: 0; }
+  body.dashfit .shell { height: 100vh; min-height: 0; }
+  body.dashfit .main { height: 100vh; overflow: hidden; padding-bottom: 12px; display: flex; flex-direction: column; box-sizing: border-box; }
+  body.dashfit #app { flex: 1; min-height: 0; gap: 8px; }
+  body.dashfit #app > .top h1 { font-size: 1.3rem; }
+  body.dashfit #app > .note { padding-block: 6px; }
+  body.dashfit .kpig { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+  body.dashfit .kpig .kpi { padding: 8px 12px; gap: 0; }
+  body.dashfit .kpig .kpi .v { font-size: clamp(1.05rem, 2.2vh, 1.4rem); }
+  body.dashfit .kpig .kpi .k, body.dashfit .kpig .kpi .kpis { font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.dashfit .dashpanels { flex: 1; min-height: 0; display: grid; gap: 8px; }
+  body.dashfit .dashpanels > * { min-height: 0; overflow: auto; margin: 0; padding: 12px; gap: 8px; }
+  body.dashfit .dashpanels .cols { flex: 1; min-height: 110px; height: auto; margin-top: 0; }
+  body.dashfit #app > .banner { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+  body.dashfit #app > .banner > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+}
 </style>
 
 <div class="theme-toggle" role="group" aria-label="Color mode">
@@ -6800,5 +6842,31 @@ document.addEventListener('change', (e) => { const d = e.target.dataset || {};
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-mcrxml],[data-mcrcsv]'); if (!b) return; const M = S.mcr; const C = mcrCompute(M.y, M.q, M.st);
   if (b.dataset.mcrxml) { mcrDownload(`MCR-RMLA-${M.y}-Q${M.q}${M.st ? '-' + M.st : ''}-DRAFT.xml`, mcrXML(M.y, M.q, C), 'application/xml'); return toast('MCR draft file ready — review before uploading to NMLS'); }
   mcrDownload(`MCR-RMLA-${M.y}-Q${M.q}${M.st ? '-' + M.st : ''}.csv`, mcrCSV(M.y, M.q, C), 'text/csv'); });
+
+// ================================================================ Layout: side menu only (no top menu), fixed side menu, dashboard that fits the screen
+// On a computer screen (wider than 1100px) the top menu links are hidden — the side menu has the same pages — and the
+// tools (calendar, help, full screen, notifications, profile) sit at the top right next to Light/Dark.
+// The dashboard fits the window without page scrolling: KPIs in two compact rows, every panel a fixed card that
+// scrolls inside itself when its content is longer. Phones and small windows keep the normal scrolling page.
+const GN_FIT = () => matchMedia('(min-width: 1101px) and (min-height: 600px)').matches;
+function gnDashFit() {
+  const on = S.view === 'dashboard' && GN_FIT(); document.body.classList.toggle('dashfit', on); if (!on) return;
+  const app = document.getElementById('app'); if (!app || app.querySelector(':scope > .dashpanels')) return;
+  const kids = [...app.children]; const anchor = app.querySelector(':scope > .kpig') || [...kids].reverse().find((k) => k.matches('.top, .note, .banner'));
+  const after = kids.slice(kids.indexOf(anchor) + 1); if (!after.length) return;
+  const cards = []; for (const k of after) { if (k.matches('.grid') && !k.matches('.kpig')) cards.push(...k.children); else cards.push(k); }
+  const box = document.createElement('div'); box.className = 'dashpanels';
+  // charts get two columns; the grid has two rows and the last card fills what is left of its row
+  const span = cards.map((c) => (c.querySelector('.cols') ? 2 : 1)); const units = span.reduce((a, x) => a + x, 0);
+  const cols = units <= 4 ? Math.max(units, 1) : Math.ceil(units / 2); let rows = 1, used = 0;
+  span.forEach((w, i) => { if (used + w > cols) { rows++; used = 0; } used += w; if (i === span.length - 1) span[i] += cols - used; });
+  box.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`; box.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+  cards.forEach((c, i) => { c.style.gridColumn = span[i] > 1 ? `span ${span[i]}` : ''; box.appendChild(c); });
+  for (const k of after) if (k.parentNode === app) k.remove(); app.appendChild(box);
+}
+{ const r1 = render; render = function () { r1(); try { gnDashFit(); } catch (e) { console.warn('dashboard layout', e); } }; }
+{ let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { if (S.view === 'dashboard' && GN_FIT() !== document.body.classList.contains('dashfit')) render(); else if (S.view === 'dashboard') gnDashFit(); }, 150); }); }
+// Light/Dark joins the tools at the top right
+{ const tt = document.querySelector('.theme-toggle'); if (tt) tt.classList.add('tt-tools'); }
 
 </script>
