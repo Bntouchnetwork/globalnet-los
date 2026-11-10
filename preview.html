@@ -825,6 +825,9 @@ select { text-overflow: ellipsis; }
   body.dashfit #app > .banner { flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
   body.dashfit #app > .banner > span:first-child { overflow: hidden; text-overflow: ellipsis; }
 }
+/* Compliance AI: operational status light (not a certification) */
+.cai-light{width:18px;height:18px;border-radius:50%;flex:none;box-shadow:0 0 0 4px color-mix(in srgb,currentColor 18%,transparent)}
+.cai-light.green{background:#1f9d55;color:#1f9d55}.cai-light.yellow{background:#d69e2e;color:#d69e2e}.cai-light.red{background:#c53030;color:#c53030}
 </style>
 
 <div class="theme-toggle" role="group" aria-label="Color mode">
@@ -7234,6 +7237,244 @@ document.addEventListener('change', (e) => { const d = e.target.dataset || {};
   if (d.bcf) { S.bcF[d.bcf] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; keepScroll(render); }
   if (d.mcrm === 'y') { S.mcrM.y = +e.target.value; S.mcrM.f = null; keepScroll(render); } });
 document.addEventListener('input', (e) => { const d = e.target.dataset || {}; if (d.bcf === 'q') { S.bcF.q = e.target.value; clearTimeout(RC.qt); RC.qt = setTimeout(() => { keepScroll(render); const el = document.querySelector('[data-bcf="q"]'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 350); } });
+
+// ================================================================ GlobalNet Compliance AI — broker portal (Compliance AI) and Super Admin › Compliance Management
+// Supervised: the AI and the system open Compliance Cases; a compliance officer approves before the brokerage receives instructions.
+// All rules live in the database (cmp_* functions). These screens show and collect only.
+const caiOn = () => rcLive() && !!(window.GN_LIVE.cmpEnabled || window.GN_LIVE.cmpStaff);
+const CAI_CAT = ['mcr', 'financial_condition', 'licensing', 'deficiency', 'regulatory_change', 'trid', 'advertising', 'lo_compensation', 'fair_lending', 'privacy_security', 'policy', 'qc', 'examination', 'training', 'onboarding', 'offboarding', 'other'];
+const CAI_KIND = ['company_license_renewal', 'branch_license_renewal', 'mlo_license_renewal', 'continuing_education', 'company_training', 'policy_review', 'qc_review', 'examination', 'deficiency_response', 'regulatory_change', 'other'];
+const CAI_LIC_ST = ['approved', 'approved_deficient', 'approved_inactive', 'approved_conditional', 'pending', 'pending_deficient', 'pending_withdrawn', 'renewal_requested', 'surrendered', 'terminated', 'revoked', 'expired', 'denied', 'unknown'];
+const CASE_PILL = { open: 'info', researching: 'info', pending_review: 'warn', changes_requested: 'warn', approved: 'acc', rejected: '', sent_to_brokerage: 'acc', in_progress: 'info', completed: 'ok', closed: '' };
+const PRI_PILL = { critical: 'bad', high: 'bad', medium: 'warn', low: 'info' };
+const RDY_PILL = { verified: 'ok', partially_implemented: 'warn', not_implemented: 'bad', requires_review: 'info' };
+const LIC_PILL = { approved: 'ok', approved_conditional: 'ok', approved_deficient: 'bad', pending_deficient: 'bad', pending: 'info', renewal_requested: 'info', unknown: 'warn', expired: 'bad', revoked: 'bad', terminated: 'bad', denied: 'bad' };
+const caiDays = (n) => n == null ? '' : n < 0 ? `<b class="bad-t">${-n} day(s) overdue</b>` : n === 0 ? '<b class="bad-t">Due today</b>' : `${n} day(s) left`;
+const caiBasis = (regs) => (regs || []).length ? `<div class="tw"><table><thead><tr><th>Official source</th><th>Regulation</th><th>Jurisdiction</th><th>Effective</th><th>Verified</th></tr></thead><tbody>${regs.map((r) => `<tr><td class="small">${r.source_url ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.source_name || r.source_url)}</a>` : '<span class="pill warn">missing</span>'}</td><td class="small">${esc(r.regulation || '') || '<span class="pill warn">missing</span>'}</td><td>${esc(r.jurisdiction || '') || '<span class="pill warn">missing</span>'}</td><td class="small">${rcD(r.effective_date)}</td><td class="small">${r.verified_at ? rcD(r.verified_at) : '<span class="pill warn">not verified</span>'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small">No legal basis recorded yet.</p>';
+const caiTabs = (key, cur, list) => `<nav class="tabs" role="tablist">${list.map(([k, n]) => `<button role="tab" class="${cur === k ? 'on' : ''}" aria-selected="${cur === k}" data-caitab="${key}|${k}">${n}</button>`).join('')}</nav>`;
+const caiAtt = async (inputId) => { const fi = document.getElementById(inputId); const f = fi && fi.files && fi.files[0]; if (!f) return null; if (f.size > 10e6) throw new Error('File too large (max 10 MB)'); const buf = await f.arrayBuffer(); return { file_name: f.name, mime_type: f.type || 'application/octet-stream', size: f.size, sha256: await rcSha256(buf) }; };
+
+// ---------------------------------------------------------------- case detail (shared by the brokerage and the compliance department)
+function caiCaseHTML(id) {
+  const key = 'cmpcase:' + id; const d = rcGet(key, () => rcRpc('cmp_case_detail', { p_case: id }));
+  if (!d) return `<div class="card">${rcLoading(key)}</div>`;
+  const c = d.case; const staff = d.is_staff; const sr = d.staff_role; const officer = ['super_admin', 'compliance_administrator', 'compliance_officer'].includes(sr);
+  const worker = officer || sr === 'compliance_reviewer'; const lawyer = sr === 'external_legal_reviewer'; const run = d.ai_run;
+  const act = [];
+  if (worker && ['open', 'changes_requested'].includes(c.status)) act.push(`<button class="btn sm" data-caiadv="${c.id}|researching">Start research</button>`);
+  if (worker && c.status === 'approved') act.push(`<button class="btn sm pri" data-caiadv="${c.id}|sent_to_brokerage">Send instructions to the brokerage</button>`);
+  if (worker && ['completed', 'rejected'].includes(c.status)) act.push(`<button class="btn sm" data-caiadv="${c.id}|closed">Close case</button>`);
+  if (!staff && c.status === 'sent_to_brokerage') act.push(`<button class="btn sm" data-caiadv="${c.id}|in_progress">We are working on it</button>`);
+  if (['sent_to_brokerage', 'in_progress'].includes(c.status)) act.push(`<button class="btn sm pri" data-caiadv="${c.id}|completed">Mark completed</button>`);
+  return `<div class="card"><div class="spread"><div><p class="muted small"><button class="link" data-caicase="">← All cases</button></p><h2>${esc(c.number)} · ${esc(c.title)}</h2>
+      <p class="small">${rcPill(c.status, CASE_PILL)} ${rcPill(c.priority, PRI_PILL)} <span class="pill">${esc(rcLbl(c.category))}</span> <span class="muted">opened by ${esc(rcLbl(c.origin))} · ${rcDT(c.created_at)}${c.due_date ? ' · due ' + rcD(c.due_date) : ''}</span>
+      ${c.legal_review_required ? ' <span class="pill warn">External legal review required</span>' : ''}${c.human_review_required ? ' <span class="pill info">Human review required</span>' : ''}</p></div>
+      <span class="row">${act.join('')}</span></div>
+    ${c.facts ? `<h3>Facts</h3><p class="small">${esc(c.facts)}</p>` : ''}
+    ${c.action_required ? `<h3>Action required</h3><p class="small">${esc(c.action_required)}</p>` : ''}
+    ${staff ? `<h3>Recommendation ${c.origin === 'ai_agent' ? '<span class="pill warn">AI draft — needs human review</span>' : ''}</h3><p class="small">${esc(c.recommendation || '—')}</p>` : ''}
+    ${c.instructions ? `<h3>Approved instructions</h3><div class="note ok small">${esc(c.instructions)}</div>` : ''}
+    <h3>Legal basis</h3>${caiBasis(c.regulations)}
+    ${staff && run ? `<details><summary class="small">AI agent run · ${esc(rcLbl(run.status))} · ${esc(run.model || '')}</summary><pre class="small">${esc(JSON.stringify(run.answer, null, 1)).slice(0, 4000)}</pre></details>` : ''}
+    ${!staff && !['sent_to_brokerage', 'in_progress', 'completed', 'closed'].includes(c.status) ? '<div class="note info small">GlobalNet compliance is reviewing this case. You will receive approved instructions here.</div>' : ''}</div>
+  ${worker && ['open', 'researching', 'changes_requested', 'pending_review'].includes(c.status) ? `<div class="card"><h2>Recommendation and basis</h2><div class="fg">
+      <label style="grid-column:span 3">Recommendation<textarea id="cc-rec" rows="3">${esc(c.recommendation || '')}</textarea></label>
+      <label>Official source link<input id="cc-url" placeholder="https://…"></label><label>Source name<input id="cc-sn" placeholder="e.g. CFPB — Regulation Z"></label><label>Regulation / citation<input id="cc-reg" placeholder="e.g. 12 CFR 1026.24"></label>
+      <label>Jurisdiction<input id="cc-jur" placeholder="US or FL…"></label><label>Effective date<input id="cc-eff" type="date"></label><label>Verified on<input id="cc-ver" type="date" value="${new Date().toISOString().slice(0, 10)}"></label>
+      <label>Action required<input id="cc-act" value="${esc(c.action_required || '')}"></label><label>Due date<input id="cc-due" type="date" value="${esc(c.due_date || '')}"></label><label class="ck"><input type="checkbox" id="cc-legal" ${c.legal_review_required ? 'checked' : ''}> Needs external legal review</label></div>
+      <button class="btn sm pri" data-cairec="${c.id}">Save and send to review</button><p class="muted small">The source line is added to the basis already listed. Approval needs the official source, regulation, jurisdiction and verification date on every line.</p></div>` : ''}
+  ${officer && c.status === 'pending_review' ? `<div class="card"><h2>Compliance officer decision</h2><div class="fg"><label style="grid-column:span 3">Instructions the brokerage will receive (if approved)<textarea id="cc-ins" rows="3">${esc(c.instructions || '')}</textarea></label>
+      <label style="grid-column:span 3">Review note (required)<input id="cc-note"></label></div>
+      <span class="row"><button class="btn sm pri" data-caidec="${c.id}|approved">Approve</button><button class="btn sm" data-caidec="${c.id}|changes_requested">Request changes</button><button class="btn sm" data-caidec="${c.id}|rejected">Reject</button></span>
+      <p class="muted small">A case you opened needs a second officer. Legal-review cases need the outside lawyer's result first.</p></div>` : ''}
+  ${lawyer && c.legal_review_required ? `<div class="card"><h2>External legal review result</h2><label>Result<textarea id="cc-law" rows="3"></textarea></label><button class="btn sm pri" data-cailaw="${c.id}">Record legal review result</button></div>` : ''}
+  <div class="card"><h2>Notes, tasks and evidence</h2><div class="tw"><table><thead><tr><th>When</th><th>Kind</th><th>Note</th><th>By</th></tr></thead><tbody>
+    ${(d.notes || []).map((n) => `<tr><td class="small">${rcDT(n.created_at)}</td><td>${esc(rcLbl(n.kind))}</td><td class="small">${esc(n.body)}${n.attachment ? `<div class="muted">${esc(n.attachment.file_name || '')} <code>${esc((n.attachment.sha256 || '').slice(0, 12))}</code></div>` : ''}</td><td class="small">${esc(n.by || '')}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">No notes yet.</td></tr>'}</tbody></table></div>
+    <div class="fg"><label>Kind<select id="cc-nk"><option value="note">Note</option><option value="task">Task</option><option value="evidence">Evidence</option></select></label><label style="grid-column:span 2">Text<input id="cc-nb"></label><label>Attachment (hash recorded)<input type="file" id="cc-nf"></label></div>
+    <button class="btn sm" data-cainote="${c.id}">Add</button></div>
+  <div class="card"><h2>Case audit trail</h2><div class="tw"><table><thead><tr><th>#</th><th>When</th><th>Event</th><th>By</th><th>Reason</th><th>Hash</th></tr></thead><tbody>${(d.events || []).map((e) => `<tr><td>${e.seq}</td><td class="small">${rcDT(e.at)}</td><td>${esc(rcLbl((e.type || '').toLowerCase()))}</td><td class="small">${esc(e.by || rcLbl(e.actor))}</td><td class="small">${esc(e.reason || '')}</td><td class="small muted"><code>${esc((e.hash || '').slice(0, 10))}</code></td></tr>`).join('')}</tbody></table></div></div>`;
+}
+
+// ---------------------------------------------------------------- broker portal: Compliance AI
+{ const n0 = nav; nav = function () { n0(); if (!['admin', 'lo'].includes(role) || !caiOn() || $('#nav [data-go="cai"]') || (S.view === 'loan' && S.loanId)) return;
+  const c = $('#nav [data-go="compliance"]'); c?.insertAdjacentHTML('afterend', `<button data-go="cai" class="${S.view === 'cai' ? 'on' : ''}"><span>Compliance AI</span></button>`); }; }
+V.cai = () => {
+  const top = (sub) => `<div class="top"><div><h1>Compliance AI</h1><p class="muted">${sub}</p></div></div>`;
+  if (!caiOn()) return top('GlobalNet Compliance AI') + rcOffline('Compliance AI');
+  const key = 'cmpdash'; const D = rcGet(key, () => rcRpc('cmp_dashboard', { p_org: rcOrg() }));
+  if (!D) return top('Loading…') + `<div class="card">${rcLoading(key)}</div>`;
+  if (!D.enabled && !D.is_staff) return top('Not active') + `<div class="card"><p>${esc(D.message || 'The service is not active for your company.')}</p></div>`;
+  const t = S.caiTab || 'overview'; const I = D.indicator || {};
+  const cal = D.calendar || []; const open = cal.filter((x) => !['done', 'not_applicable', 'submitted', 'accepted_filed', 'amended'].includes(x.status));
+  const pend = [...open.filter((x) => x.days_left <= 45).map((x) => ({ when: x.due_date, days: x.days_left, what: x.title, kind: x.source === 'mcr' ? 'NMLS MCR' : rcLbl(x.kind), go: x.source === 'mcr' ? 'mcr' : 'calendar' })),
+    ...(D.cases || []).filter((c) => ['sent_to_brokerage', 'in_progress'].includes(c.status)).map((c) => ({ when: c.due_date, days: c.due_date ? Math.round((new Date(c.due_date + 'T12:00') - new Date()) / 864e5) : null, what: c.number + ' · ' + c.title, kind: 'Approved instructions', case: c.id })),
+    ...(D.licenses || []).filter((l) => ['approved_deficient', 'pending_deficient', 'expired', 'unknown'].includes(l.status)).map((l) => ({ what: `${rcLbl(l.license_type)} license ${l.state} ${l.license_number || ''} — ${rcLbl(l.status)}`, kind: 'License', go: 'licensing' }))]
+    .sort((a, b) => (a.days ?? 999) - (b.days ?? 999));
+  let body = '';
+  if (S.caiCase) body = caiCaseHTML(S.caiCase);
+  else if (t === 'overview') {
+    body = `<div class="card"><div class="spread"><div class="row"><span class="cai-light ${I.level}" aria-hidden="true"></span><div><h2>Compliance status: ${I.level === 'green' ? 'No open items' : I.level === 'yellow' ? 'Items need attention' : 'Action required'}</h2><p class="muted small">${esc(I.disclaimer || '')}</p></div></div>
+        <span class="row"><button class="btn sm" data-rcreload="cmpdash">Refresh</button></span></div>
+      <div class="grid g4 kpig">${kpi('Overdue', I.overdue || 0, 'deadlines past due', null, I.overdue ? 'warn' : 'ok')}${kpi('Due in 15 days', I.due_15_days || 0, 'calendar and MCR', null, I.due_15_days ? 'acc' : '')}${kpi('Open cases', I.open_cases || 0, 'in review or with you')}${kpi('License issues', I.license_issues || 0, 'deficient, expired or unknown', null, I.license_issues ? 'warn' : '')}</div></div>
+      <div class="card"><h2>Pending requirements</h2><div class="tw"><table><thead><tr><th>Item</th><th>Type</th><th>Due</th><th></th></tr></thead><tbody>
+      ${pend.map((p) => `<tr><td>${esc(p.what)}</td><td class="small">${esc(p.kind)}</td><td class="small">${p.when ? rcD(p.when) : ''}<div>${caiDays(p.days)}</div></td><td>${p.case ? `<button class="btn sm" data-caicase="${p.case}">Open</button>` : p.go === 'mcr' ? '<button class="btn sm" data-rcgomcr="1">Open MCR</button>' : `<button class="btn sm" data-caitab="cai|${p.go}">Open</button>`}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Nothing pending in the next 45 days.</td></tr>'}</tbody></table></div></div>
+      <div class="card"><h2>Recent alerts</h2>${(D.alerts || []).length ? `<ul class="small">${D.alerts.slice(0, 8).map((a) => `<li><span class="pill ${a.severity === 'overdue' ? 'bad' : a.severity === 'warning' ? 'warn' : 'info'}">${esc(a.severity)}</span> ${esc(a.message)} <span class="muted">${rcD(a.alert_date)}</span></li>`).join('')}</ul>` : '<p class="muted small">No alerts yet. Alerts go out 45, 30, 15, 7, 3, 2 and 1 days before, on the due date, and daily when overdue.</p>'}</div>`;
+  } else if (t === 'calendar') {
+    body = `<div class="card"><div class="spread"><h2>Regulatory calendar</h2><span class="row"><button class="btn sm" data-cairunalerts="1">Run alert check now</button></span></div>
+      <p class="muted small">MCR filings, license renewals, CE, training, policy and QC reviews, exams and deficiency responses in one list. Official deadlines and extensions must be confirmed with the source shown.</p>
+      <div class="tw"><table><thead><tr><th>Due</th><th>Item</th><th>Type</th><th>Jurisdiction</th><th>Status</th><th>Basis</th><th></th></tr></thead><tbody>
+      ${cal.map((x) => `<tr><td class="small">${rcD(x.due_date)}<div>${['done', 'not_applicable', 'submitted', 'accepted_filed', 'amended'].includes(x.status) ? '' : caiDays(x.days_left)}</div></td><td><b>${esc(x.title)}</b>${x.completion_note ? `<div class="small muted">${esc(x.completion_note)}</div>` : ''}</td><td class="small">${esc(rcLbl(x.kind))}</td><td>${esc(x.jurisdiction)}</td><td>${esc(rcLbl(x.status))}</td>
+        <td class="small">${(x.basis || []).map((b) => `<a href="${esc(b.source_url || '#')}" target="_blank" rel="noopener">${esc(b.source_name || b.regulation || 'source')}</a>${b.verified_at ? '' : ' <span class="pill warn">verify</span>'}`).join('<br>')}</td>
+        <td>${x.source === 'mcr' ? '<button class="btn sm" data-rcgomcr="1">Open MCR</button>' : ['open', 'extended'].includes(x.status) ? `<span class="row"><input id="cl-n-${x.id}" placeholder="Evidence / note" style="min-width:150px"><input id="cl-d-${x.id}" type="date" title="New date (extension)"><button class="btn sm" data-caical="${x.id}|done">Done</button><button class="btn sm" data-caical="${x.id}|extended">Extended</button><button class="btn sm" data-caical="${x.id}|not_applicable">N/A</button></span>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">Nothing on the calendar.</td></tr>'}</tbody></table></div>
+      <h3>Add a deadline</h3><div class="fg"><label>Type<select id="cn-k">${CAI_KIND.map((k) => `<option value="${k}">${rcLbl(k)}</option>`).join('')}</select></label><label style="grid-column:span 2">Title<input id="cn-t"></label><label>Due date<input id="cn-d" type="date"></label><label>Jurisdiction<input id="cn-j" placeholder="US, FL…"></label>
+        <label>Official source link<input id="cn-u" placeholder="https://…"></label><label>Regulation / requirement<input id="cn-r"></label></div><button class="btn sm pri" data-caicaladd="1">Add to calendar</button></div>`;
+  } else if (t === 'cases') {
+    const cs = D.cases || [];
+    body = `<div class="card"><div class="spread"><h2>Compliance cases</h2><span class="muted small">${cs.length} case(s)</span></div>
+      <div class="tw"><table><thead><tr><th>Case</th><th>Title</th><th>Category</th><th>Origin</th><th>Priority</th><th>Status</th><th>Due</th><th></th></tr></thead><tbody>
+      ${cs.map((c) => `<tr><td><b>${esc(c.number)}</b></td><td>${esc(c.title)}</td><td class="small">${esc(rcLbl(c.category))}</td><td class="small">${esc(rcLbl(c.origin))}</td><td>${rcPill(c.priority, PRI_PILL)}</td><td>${rcPill(c.status, CASE_PILL)}</td><td class="small">${rcD(c.due_date)}</td><td><button class="btn sm" data-caicase="${c.id}">Open</button></td></tr>`).join('') || '<tr><td colspan="8" class="muted">No cases yet.</td></tr>'}</tbody></table></div>
+      <h3>Ask GlobalNet compliance (new case)</h3><div class="fg"><label style="grid-column:span 2">Title<input id="nc-t"></label><label>Category<select id="nc-c">${CAI_CAT.map((k) => `<option value="${k}">${rcLbl(k)}</option>`).join('')}</select></label>
+        <label style="grid-column:span 2">Facts (no borrower SSNs or account numbers)<textarea id="nc-f" rows="3"></textarea></label><label>Needed by<input id="nc-d" type="date"></label></div><button class="btn sm pri" data-caicaseadd="1">Open case</button></div>`;
+  } else if (t === 'licensing') {
+    const L = D.licenses || []; const ed = S.caiLic ? L.find((x) => x.id === S.caiLic) : null;
+    body = `<div class="card"><h2>Licenses — company, branches and MLOs</h2><p class="muted small">Statuses come from NMLS exports, NMLS documents or state portals provided by authorized users. The system does not sign in to NMLS or use anyone's credentials. Open deficiencies become Deficiency cases automatically.</p>
+      <div class="tw"><table><thead><tr><th>Type</th><th>Who</th><th>State</th><th>Number</th><th>Status</th><th>Sponsorship</th><th>Renewal / expiry</th><th>Deficiencies</th><th>Source · verified</th><th></th></tr></thead><tbody>
+      ${L.map((l) => `<tr><td>${esc(rcLbl(l.license_type))}</td><td class="small">${esc(l.person || l.branch || (l.license_type === 'company' ? D.organization?.name || '' : ''))}</td><td>${esc(l.state)}</td><td>${esc(l.license_number || '')}</td><td>${rcPill(l.status, LIC_PILL)}</td><td class="small">${esc(rcLbl(l.sponsorship_status || ''))}</td>
+        <td class="small">${rcD(l.renewal_due || l.expires_on)}</td><td class="small">${(l.deficiencies || []).filter((d) => (d.status || 'open') === 'open').map((d) => esc(d.title || d.description)).join('<br>') || '—'}</td><td class="small">${esc(rcLbl(l.source || ''))}<div class="muted">${rcD(l.verified_at)}</div></td><td><button class="btn sm" data-cailic="${l.id}">Update</button></td></tr>`).join('') || '<tr><td colspan="10" class="muted">No licenses recorded yet. Add the company license first (from the NMLS record).</td></tr>'}</tbody></table></div>
+      <h3>${ed ? 'Update license' : 'Add a license'}</h3><div class="fg">
+        <label>Type<select id="lc-t">${['company', 'branch', 'mlo'].map((k) => `<option value="${k}" ${ed?.license_type === k ? 'selected' : ''}>${rcLbl(k)}</option>`).join('')}</select></label>
+        <label>MLO (for MLO licenses)<select id="lc-u"><option value="">—</option>${(D.people || []).map((p) => `<option value="${p.user_id}" ${ed?.user_id === p.user_id ? 'selected' : ''}>${esc(p.name)}${p.nmls ? ' · NMLS ' + esc(p.nmls) : ''}</option>`).join('')}</select></label>
+        <label>Branch (for branch licenses)<select id="lc-b"><option value="">—</option>${(D.branches || []).map((b) => `<option value="${b.id}" ${ed?.branch_id === b.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></label>
+        <label>State<input id="lc-s" maxlength="2" value="${esc(ed?.state || 'FL')}"></label><label>License number<input id="lc-n" value="${esc(ed?.license_number || '')}"></label>
+        <label>Status<select id="lc-st">${CAI_LIC_ST.map((k) => `<option value="${k}" ${(ed?.status || 'unknown') === k ? 'selected' : ''}>${rcLbl(k)}</option>`).join('')}</select></label>
+        <label>Renewal due<input id="lc-r" type="date" value="${esc(ed?.renewal_due || '')}"></label><label>Sponsorship<select id="lc-sp"><option value="">—</option>${['not_required', 'requested', 'accepted', 'removed', 'unknown'].map((k) => `<option value="${k}" ${ed?.sponsorship_status === k ? 'selected' : ''}>${rcLbl(k)}</option>`).join('')}</select></label>
+        <label>Where this comes from<select id="lc-src"><option value="">Choose…</option>${['nmls_export', 'nmls_document', 'state_portal', 'regulator_letter', 'user_entry'].map((k) => `<option value="${k}">${rcLbl(k)}</option>`).join('')}</select></label>
+        <label style="grid-column:span 2">New deficiency / license item (optional)<input id="lc-dt" placeholder="e.g. Upload audited financial statement"></label><label>Deficiency due<input id="lc-dd" type="date"></label>
+        <label style="grid-column:span 2">Evidence / notes<input id="lc-ev"></label><label>Evidence file (hash recorded)<input type="file" id="lc-f"></label></div>
+      <span class="row"><button class="btn sm pri" data-cailicsave="${ed ? ed.id : ''}">${ed ? 'Save update' : 'Add license'}</button>${ed ? '<button class="btn sm" data-cailic="">Cancel</button>' : ''}</span></div>`;
+  } else if (t === 'assistant') {
+    const runs = D.ai_runs || [];
+    body = `<div class="card"><h2>Compliance AI Assistant</h2><p class="muted small">Ask about NMLS, SAFE Act, TILA/Reg Z, RESPA/Reg X, TRID, ECOA/Reg B, HMDA, GLBA, LO compensation, advertising, licensing, MCR, CE, QC or exams. Every answer must cite the official source, regulation, jurisdiction, effective and verification dates — and goes to GlobalNet compliance for review. Do not include borrower names, SSNs or account numbers.</p>
+      <label>Question<textarea id="ai-q" rows="3" placeholder="e.g. What must a Florida broker include in a social media ad that mentions a rate?"></textarea></label><button class="btn sm pri" data-caiask="1">Ask</button></div>
+      <div class="card"><h2>Your questions</h2>${runs.map((r) => { const a = r.answer || {}; return `<div class="card sub"><div class="spread"><b>${esc(r.question)}</b><span>${rcPill(r.status, { queued: 'info', running: 'info', answered: 'acc', needs_review: 'warn', failed: 'bad' })}</span></div>
+        <p class="muted small">${rcDT(r.created_at)}${r.status === 'queued' ? ' · waiting for the Compliance AI agent (it runs in the background service; until it is connected, GlobalNet compliance answers through the case)' : ''}</p>
+        ${a.summary ? `<div class="note ${r.status === 'answered' ? 'info' : 'warn'} small"><b>AI draft — not yet reviewed by compliance.</b> ${esc(a.summary)}</div>${(a.guidance || []).map((g) => `<div class="small" style="margin:6px 0"><b>${esc(g.action_required || '')}</b>${g.deadline ? ' · deadline: ' + esc(g.deadline) : ''}<br><a href="${esc(g.source_url || '#')}" target="_blank" rel="noopener">${esc(g.official_source || g.source_url || '')}</a> · ${esc(g.regulation || '')} · ${esc(g.jurisdiction || '')} · effective ${esc(g.effective_date || '—')} · verified ${esc(g.verified_at || '—')}${g.human_review_required ? ' · <span class="pill warn">human review</span>' : ''}</div>`).join('')}` : ''}
+        ${r.case_id ? `<button class="btn sm" data-caicase="${r.case_id}">Open case</button>` : ''}</div>`; }).join('') || '<p class="muted small">No questions yet.</p>'}</div>`;
+  } else {
+    const k2 = 'cmpaudit'; const A = rcGet(k2, () => rcRpc('cmp_audit', { p_org: rcOrg(), p_limit: 300 }));
+    body = `<div class="card"><div class="spread"><h2>Compliance audit trail</h2><span>${D.chain?.ok ? '<span class="pill ok">Hash chain verified</span>' : '<span class="pill bad">Chain broken</span>'} <span class="muted small">${D.chain?.events || 0} events</span></span></div>
+      <p class="muted small">Append-only. Each event records who (person, system or AI agent), when, what changed, the reason and evidence, linked to the previous event by SHA-256.</p>
+      ${A ? `<div class="tw"><table><thead><tr><th>#</th><th>When</th><th>Event</th><th>Subject</th><th>By</th><th>Reason</th><th>Hash</th></tr></thead><tbody>${A.map((e) => `<tr><td>${e.seq}</td><td class="small">${rcDT(e.at)}</td><td>${esc(rcLbl((e.type || '').toLowerCase()))}</td><td class="small">${esc(rcLbl(e.kind || ''))}</td><td class="small">${esc(e.by || rcLbl(e.actor))}</td><td class="small">${esc(e.reason || '')}</td><td class="small muted"><code>${esc((e.hash || '').slice(0, 10))}</code></td></tr>`).join('')}</tbody></table></div>
+      <button class="btn sm" data-caiauditdl="org">Download audit trail (JSON)</button>` : rcLoading(k2)}</div>`;
+  }
+  return top(`${esc(D.organization?.name || '')} · NMLS ${esc(D.organization?.nmls || '')} · ${esc({ cmp_addon: 'Compliance Add-On', cmp_standalone: 'Standalone Compliance' }[D.account?.plan_code] || rcLbl(D.account?.plan_code || ''))}${D.account?.pilot ? ' · pilot' : ''}`) +
+    (S.caiCase ? '' : caiTabs('cai', t, [['overview', 'Dashboard'], ['calendar', 'Regulatory calendar'], ['cases', `Cases${(D.cases || []).filter((c) => ['sent_to_brokerage', 'in_progress'].includes(c.status)).length ? ' (' + (D.cases || []).filter((c) => ['sent_to_brokerage', 'in_progress'].includes(c.status)).length + ')' : ''}`], ['licensing', 'Licensing'], ['assistant', 'AI Assistant'], ['audit', 'Audit trail']])) + body;
+};
+
+// ---------------------------------------------------------------- Super Admin › Compliance Management
+PVIEWS.push('pcomp');
+{ const n0 = nav; nav = function () { n0(); if (role !== 'platform' || !S.pAuth || $('#nav [data-go="pcomp"]')) return;
+  $('#nav').insertAdjacentHTML('beforeend', `<button data-go="pcomp" class="${S.view === 'pcomp' ? 'on' : ''}"><span>Compliance Management</span></button>`); }; }
+V.pcomp = () => {
+  const top = `<div class="top"><div><h1>Compliance Management</h1><p class="muted">GlobalNet Compliance AI — brokerage accounts, human review, regulatory updates and readiness</p></div></div>`;
+  if (!rcLive()) return top + rcOffline('Compliance Management');
+  const key = 'cmpadmin'; const D = rcGet(key, () => rcRpc('cmp_admin_overview', {}));
+  if (!D) return top + `<div class="card">${rcLoading(key)}</div>`;
+  if (S.caiCase) return top + caiCaseHTML(S.caiCase);
+  const t = S.pcompTab || 'brokerages'; const isSA = D.role === 'super_admin'; const isAdm = ['super_admin', 'compliance_administrator'].includes(D.role); const isOff = isAdm || D.role === 'compliance_officer';
+  const q = D.review_queue || []; const ru = D.reg_updates || [];
+  let body = '';
+  if (t === 'brokerages') {
+    body = `<div class="card"><h2>Brokerage compliance accounts</h2><p class="muted small">Turning the service on makes the Compliance AI module appear in that brokerage's portal. Standalone accounts can subscribe without using the GlobalNet LOS.</p>
+      <div class="tw"><table><thead><tr><th>Brokerage</th><th>NMLS</th><th>Service</th><th>Plan</th><th>States</th><th>Open cases</th><th>In review</th><th>Overdue</th><th>License issues</th><th></th></tr></thead><tbody>
+      ${(D.brokerages || []).map((b) => { const a = b.account || {}; return `<tr><td><b>${esc(b.name)}</b>${a.pilot ? ' <span class="pill acc">Pilot</span>' : ''}${a.standalone ? ' <span class="pill">Standalone</span>' : ''}</td><td>${esc(b.nmls || '')}</td>
+        <td>${a.enabled ? `<span class="pill ok">On</span> <span class="small muted">${esc(rcLbl(a.status))}</span>` : '<span class="pill">Off</span>'}</td>
+        <td><select id="pa-p-${b.org_id}" ${isAdm ? '' : 'disabled'}>${(D.plans || []).filter((p) => ['addon', 'standalone'].includes(p.kind)).map((p) => `<option value="${p.code}" ${a.plan_code === p.code ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></td>
+        <td><input id="pa-s-${b.org_id}" value="${esc((a.states || []).join(', '))}" style="width:90px" ${isAdm ? '' : 'disabled'}></td><td>${b.open_cases}</td><td>${b.pending_review ? `<span class="pill warn">${b.pending_review}</span>` : 0}</td><td>${b.overdue ? `<span class="pill bad">${b.overdue}</span>` : 0}</td><td>${b.license_issues ? `<span class="pill bad">${b.license_issues}</span>` : 0}</td>
+        <td>${isAdm ? `<span class="row"><input id="pa-r-${b.org_id}" placeholder="Reason" style="width:110px"><button class="btn sm ${a.enabled ? '' : 'pri'}" data-pcsvc="${b.org_id}|${a.enabled ? 'off' : 'on'}">${a.enabled ? 'Disable' : 'Enable'}</button>${a.enabled ? `<button class="btn sm" data-pcsvc="${b.org_id}|save">Save</button>` : ''}</span>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+  } else if (t === 'queue') {
+    body = `<div class="card"><h2>Review queue — GlobalNet Compliance Department</h2><p class="muted small">1 AI or system identifies → 2 case opened → 3–5 research, evidence, recommendation → 6–7 officer approves, rejects or asks for changes → 8 brokerage receives approved instructions → 9 completion tracked → 10 everything in the audit trail.</p>
+      <div class="tw"><table><thead><tr><th>Case</th><th>Brokerage</th><th>Title</th><th>Origin</th><th>Priority</th><th>Status</th><th>Basis</th><th>Due</th><th></th></tr></thead><tbody>
+      ${q.map((c) => `<tr><td><b>${esc(c.number)}</b></td><td class="small">${esc(c.org)}</td><td>${esc(c.title)}${c.legal_review_required ? ' <span class="pill warn">Legal</span>' : ''}</td><td class="small">${esc(rcLbl(c.origin))}</td><td>${rcPill(c.priority, PRI_PILL)}</td><td>${rcPill(c.status, CASE_PILL)}</td><td>${c.basis_complete ? '<span class="pill ok">Complete</span>' : '<span class="pill warn">Incomplete</span>'}</td><td class="small">${rcD(c.due_date)}</td><td><button class="btn sm" data-caicase="${c.id}">Open</button></td></tr>`).join('') || '<tr><td colspan="9" class="muted">Nothing waiting.</td></tr>'}</tbody></table></div>
+      <h3>AI agent questions</h3><div class="tw"><table><thead><tr><th>When</th><th>Brokerage</th><th>Question</th><th>Status</th><th></th></tr></thead><tbody>${(D.ai_runs || []).map((r) => `<tr><td class="small">${rcDT(r.created_at)}</td><td class="small">${esc(r.org)}</td><td class="small">${esc(r.question)}</td><td>${esc(rcLbl(r.status))}</td><td>${r.case_id ? `<button class="btn sm" data-caicase="${r.case_id}">Case</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No questions yet.</td></tr>'}</tbody></table></div></div>`;
+  } else if (t === 'updates') {
+    body = `<div class="card"><h2>Regulatory Knowledge Engine</h2><p class="muted small">Official sources checked by the background service. A change is never applied automatically: a compliance officer reads it, records the citation and effective date, and approves. Approval opens a Regulatory Change case in every affected brokerage (impact analysis).</p>
+      <div class="tw"><table><thead><tr><th>Detected</th><th>Update</th><th>Jurisdiction</th><th>Citation · effective</th><th>Impact</th><th>Status</th><th></th></tr></thead><tbody>
+      ${ru.map((u) => `<tr><td class="small">${rcDT(u.detected_at)}<div class="muted">${esc(u.source || rcLbl(u.detected_by))}</div></td><td><b>${esc(u.title)}</b><div class="small">${esc(u.summary || '')}</div>${u.url ? `<a class="small" href="${esc(u.url)}" target="_blank" rel="noopener">official page</a>` : ''}</td><td>${esc(u.jurisdiction)}</td><td class="small">${esc(u.citation || '—')}<div>${rcD(u.effective_date)}</div></td>
+        <td class="small">${u.impact ? `${(u.impact.brokerages || []).length} brokerage(s)<div class="muted">${esc((u.impact.areas || []).join(', '))}</div>` : '—'}</td><td>${esc(rcLbl(u.status))}</td>
+        <td>${u.status === 'pending_review' && isOff ? `<span class="row"><input id="ru-n-${u.id}" placeholder="What you checked" style="width:140px"><button class="btn sm pri" data-pcreg="${u.id}|approved">Approve</button><button class="btn sm" data-pcreg="${u.id}|no_impact">No impact</button><button class="btn sm" data-pcreg="${u.id}|rejected">Reject</button></span>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">No updates detected yet (the monitor runs in the background service).</td></tr>'}</tbody></table></div>
+      <h3>Record an update by hand</h3><div class="fg"><label style="grid-column:span 2">Title<input id="rn-t"></label><label>Jurisdiction<input id="rn-j" placeholder="US, FL…"></label><label style="grid-column:span 2">Official link<input id="rn-u"></label><label>Citation<input id="rn-c"></label>
+        <label>Effective date<input id="rn-e" type="date"></label><label>Topics<input id="rn-tp" placeholder="trid, advertising, licensing…"></label><label>Summary<input id="rn-s"></label></div><button class="btn sm pri" data-pcregadd="1">Record update</button>
+      <h3>Monitored official sources</h3><div class="tw"><table><thead><tr><th>Source</th><th>Agency</th><th>Jurisdiction</th><th>Topics</th><th>Last checked</th></tr></thead><tbody>${(D.sources || []).map((s) => `<tr><td><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a></td><td>${esc(s.agency)}</td><td>${esc(s.jurisdiction)}</td><td class="small">${esc((s.topics || []).join(', '))}</td><td class="small">${s.last_checked_at ? rcDT(s.last_checked_at) : 'not yet'}</td></tr>`).join('')}</tbody></table></div></div>`;
+  } else if (t === 'readiness') {
+    const orgs = D.brokerages || []; const sel = S.pcompOrg || (orgs.find((b) => b.account?.pilot) || orgs[0] || {}).org_id; const k3 = 'cmprdy:' + sel; const R = sel && rcGet(k3, () => rcRpc('cmp_readiness', { p_org: sel }));
+    body = `<div class="card"><div class="spread"><h2>Compliance Service Replacement Readiness</h2><label class="small">Brokerage<select data-pcorg="1">${orgs.map((b) => `<option value="${b.org_id}" ${b.org_id === sel ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></label></div>
+      ${R ? `<div class="note warn small">${esc(R.note)}</div><div class="tw"><table><thead><tr><th>Area</th><th>Measured status</th><th>What the system sees</th><th>Last officer review</th><th></th></tr></thead><tbody>
+      ${R.items.map((i) => `<tr><td><b>${esc(i.name)}</b></td><td>${rcPill(i.status, RDY_PILL)}</td><td class="small">${esc(i.detail)}</td><td class="small">${i.review ? `${rcPill(i.review.status, RDY_PILL)} ${esc(i.review.note)}<div class="muted">${esc(i.review.by || '')} · ${rcD(i.review.at)}</div>` : '—'}</td>
+        <td>${isOff ? `<span class="row"><select id="rr-s-${i.item}">${Object.keys(RDY_PILL).map((s) => `<option value="${s}">${rcLbl(s)}</option>`).join('')}</select><input id="rr-n-${i.item}" placeholder="What you checked" style="width:150px"><button class="btn sm" data-pcrdy="${sel}|${i.item}">Record review</button></span>` : ''}</td></tr>`).join('')}</tbody></table></div>` : rcLoading(k3)}</div>`;
+  } else if (t === 'plans') {
+    body = `<div class="card"><h2>Plans and prices</h2><p class="muted small">Commercial terms are set here by the Super Admin. Billing runs through the payment processor once it is connected.</p><div class="tw"><table><thead><tr><th>Plan</th><th>Kind</th><th>Monthly price</th><th>Features</th><th>Active</th><th></th></tr></thead><tbody>
+      ${(D.plans || []).map((p) => `<tr><td><input id="pl-n-${p.code}" value="${esc(p.name)}" ${isSA ? '' : 'disabled'}></td><td class="small">${esc(rcLbl(p.kind))}</td><td><input id="pl-p-${p.code}" value="${p.monthly_price}" inputmode="decimal" style="width:90px" ${isSA ? '' : 'disabled'}></td><td class="small">${esc((p.features || []).join(', '))}</td><td><input type="checkbox" id="pl-a-${p.code}" ${p.active ? 'checked' : ''} ${isSA ? '' : 'disabled'}></td><td>${isSA ? `<button class="btn sm" data-pcplan="${p.code}">Save</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
+  } else if (t === 'staff') {
+    body = `<div class="card"><h2>GlobalNet Compliance Department</h2><p class="muted small">Super Admin · Compliance Administrator · Compliance Officer (approves) · Compliance Reviewer (researches, cannot approve) · External Legal Reviewer · Read-Only Auditor. Brokerage roles (owner, admin, MLO) come from each brokerage.</p>
+      <div class="tw"><table><thead><tr><th>Name</th><th>E-mail</th><th>Role</th><th>Active</th><th></th></tr></thead><tbody>${(D.staff || []).map((s) => `<tr><td>${esc(s.name || '')}</td><td class="small">${esc(s.email || '')}</td><td>${esc(rcLbl(s.role))}</td><td>${s.active ? 'Yes' : 'No'}</td><td>${isAdm ? `<button class="btn sm" data-pcstaff="${s.user_id}|${s.role}|${s.active ? 'off' : 'on'}">${s.active ? 'Deactivate' : 'Activate'}</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Only the Super Admin so far. Add at least two compliance officers so a second person can approve.</td></tr>'}</tbody></table></div>
+      ${isAdm ? `<div class="fg"><label>E-mail of an existing LOS user<input id="st-e"></label><label>Role<select id="st-r">${['compliance_administrator', 'compliance_officer', 'compliance_reviewer', 'external_legal_reviewer', 'read_only_auditor'].map((r) => `<option value="${r}">${rcLbl(r)}</option>`).join('')}</select></label></div><button class="btn sm pri" data-pcstaffadd="1">Add to compliance staff</button>` : ''}</div>`;
+  } else {
+    const k4 = 'cmpaudit:platform'; const A = rcGet(k4, () => rcRpc('cmp_audit', { p_org: null, p_limit: 300 }));
+    body = `<div class="card"><div class="spread"><h2>Platform audit trail</h2><span>${D.platform_chain?.ok ? '<span class="pill ok">Hash chain verified</span>' : '<span class="pill bad">Chain broken</span>'}</span></div>
+      ${A ? `<div class="tw"><table><thead><tr><th>#</th><th>When</th><th>Event</th><th>By</th><th>Reason</th><th>Hash</th></tr></thead><tbody>${A.map((e) => `<tr><td>${e.seq}</td><td class="small">${rcDT(e.at)}</td><td>${esc(rcLbl((e.type || '').toLowerCase()))}</td><td class="small">${esc(e.by || rcLbl(e.actor))}</td><td class="small">${esc(e.reason || '')}</td><td class="small muted"><code>${esc((e.hash || '').slice(0, 10))}</code></td></tr>`).join('')}</tbody></table></div>` : rcLoading(k4)}</div>`;
+  }
+  return top + caiTabs('pcomp', t, [['brokerages', 'Brokerage accounts'], ['queue', `Review queue${q.filter((c) => c.status === 'pending_review').length ? ' (' + q.filter((c) => c.status === 'pending_review').length + ')' : ''}`], ['updates', `Regulatory updates${ru.filter((u) => u.status === 'pending_review').length ? ' (' + ru.filter((u) => u.status === 'pending_review').length + ')' : ''}`], ['readiness', 'Replacement readiness'], ['plans', 'Plans'], ['staff', 'Compliance staff'], ['audit', 'Audit trail']]) + body;
+};
+
+// ---------------------------------------------------------------- events
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-caitab],[data-caicase],[data-caiadv],[data-caidec],[data-cairec],[data-cailaw],[data-cainote],[data-cairunalerts],[data-caical],[data-caicaladd],[data-caicaseadd],[data-cailic],[data-cailicsave],[data-caiask],[data-caiauditdl],[data-pcsvc],[data-pcreg],[data-pcregadd],[data-pcrdy],[data-pcplan],[data-pcstaff],[data-pcstaffadd]');
+  if (!b) return; const d = b.dataset; const ORG = () => rcOrg(); const drops = ['cmpdash', 'cmpcase:', 'cmpadmin', 'cmpaudit', 'cmprdy:'];
+  if (d.caitab !== undefined) { const [k, v] = d.caitab.split('|'); if (k === 'cai') S.caiTab = v; else S.pcompTab = v; S.caiCase = null; return keepScroll(render); }
+  if (d.caicase !== undefined) { S.caiCase = d.caicase || null; if (d.caicase) delete RC.cache['cmpcase:' + d.caicase]; return keepScroll(render); }
+  if (d.caiadv) { const [id, st] = d.caiadv.split('|'); let note = null;
+    if (st === 'completed') { const ev = document.getElementById('cc-nb'); note = ev && ev.value.trim() ? ev.value.trim() : null; }
+    return rcDo('cmp_case_advance', { p_case: id, p_status: st, p_note: note }, 'Case: ' + rcLbl(st), drops); }
+  if (d.caidec) { const [id, dec] = d.caidec.split('|'); const note = rcVal('cc-note'); if (!note) return toast('Enter the review note'); return rcDo('cmp_case_decide', { p_case: id, p_decision: dec, p_note: note, p_instructions: rcVal('cc-ins') || null }, 'Decision recorded: ' + rcLbl(dec), drops); }
+  if (d.cairec) { const C = (RC.cache['cmpcase:' + d.cairec] || {}).case || {}; const regs = (C.regulations || []).slice(); const url = rcVal('cc-url');
+    if (url) regs.push({ source_url: url, source_name: rcVal('cc-sn') || null, regulation: rcVal('cc-reg'), jurisdiction: (rcVal('cc-jur') || '').toUpperCase(), effective_date: rcVal('cc-eff') || null, verified_at: rcVal('cc-ver') || null });
+    return rcDo('cmp_case_recommend', { p_case: d.cairec, p: { recommendation: rcVal('cc-rec'), regulations: regs, action_required: rcVal('cc-act') || null, due_date: rcVal('cc-due') || null, legal_review_required: rcVal('cc-legal') } }, 'Sent to officer review', drops); }
+  if (d.cailaw) { const t = rcVal('cc-law'); if (!t) return toast('Write the result'); return rcDo('cmp_case_note', { p_case: d.cailaw, p: { kind: 'decision', body: t } }, 'Legal review result recorded', drops); }
+  if (d.cainote) { try { const att = await caiAtt('cc-nf'); const body = rcVal('cc-nb'); if (!body) return toast('Write the note');
+      return rcDo('cmp_case_note', { p_case: d.cainote, p: { kind: rcVal('cc-nk'), body, attachment: att } }, 'Added', drops); } catch (err) { return toast(err.message); } }
+  if (d.cairunalerts) { const n = await rcDo('cmp_run_alerts', { p_org: ORG(), p_today: new Date().toISOString().slice(0, 10) }, null, drops); if (n !== null) toast(`${n} new alert(s)`); return; }
+  if (d.caical) { const [id, st] = d.caical.split('|'); const note = rcVal('cl-n-' + id); const dt = rcVal('cl-d-' + id);
+    if (st === 'done' && !note) return toast('Describe the evidence that it was done'); if (st !== 'done' && !note) return toast('Explain (who granted the extension / why it does not apply)'); if (st === 'extended' && !dt) return toast('Choose the new date');
+    return rcDo('cmp_calendar_update', { p_id: id, p_status: st, p: { note, evidence: st === 'done' ? { description: note } : null, extended_to: dt || null } }, 'Updated', drops); }
+  if (d.caicaladd) { const u = rcVal('cn-u'); const p = { kind: rcVal('cn-k'), title: rcVal('cn-t'), due_date: rcVal('cn-d') || null, jurisdiction: rcVal('cn-j') || 'US',
+      basis: u ? [{ source_url: u, regulation: rcVal('cn-r') || null, jurisdiction: (rcVal('cn-j') || 'US').toUpperCase(), verified_at: null }] : [] };
+    return rcDo('cmp_calendar_add', { p_org: ORG(), p }, 'Added to the calendar', drops); }
+  if (d.caicaseadd) { const f = rcVal('nc-f'); if (/\d{3}-?\d{2}-?\d{4}/.test(f)) return toast('Remove SSNs or other borrower identifiers');
+    return rcDo('cmp_case_open', { p_org: ORG(), p: { title: rcVal('nc-t'), category: rcVal('nc-c'), facts: f, due_date: rcVal('nc-d') || null } }, 'Case opened — GlobalNet compliance will review it', drops); }
+  if (d.cailic !== undefined) { S.caiLic = d.cailic || null; return keepScroll(render); }
+  if (d.cailicsave !== undefined) { try { const att = await caiAtt('lc-f'); const L = ((RC.cache.cmpdash || {}).licenses || []).find((x) => x.id === d.cailicsave); const dt = rcVal('lc-dt');
+      const defs = (L ? (L.deficiencies || []) : []).slice(); if (dt) defs.push({ id: 'd' + Date.now(), title: dt, due_date: rcVal('lc-dd') || null, status: 'open', added_at: new Date().toISOString() });
+      const ev = rcVal('lc-ev'); const p = { id: d.cailicsave || null, license_type: rcVal('lc-t'), user_id: rcVal('lc-u') || null, branch_id: rcVal('lc-b') || null, state: rcVal('lc-s').toUpperCase(), license_number: rcVal('lc-n') || null,
+        status: rcVal('lc-st'), renewal_due: rcVal('lc-r') || null, sponsorship_status: rcVal('lc-sp') || null, source: rcVal('lc-src'), deficiencies: defs, notes: ev || null, evidence: att || ev ? { note: ev || null, file: att } : null };
+      if (!p.source) return toast('Say where this status comes from');
+      const r = await rcDo('cmp_license_save', { p_org: ORG(), p }, 'License saved', drops); if (r) { S.caiLic = null; keepScroll(render); } } catch (err) { toast(err.message); } return; }
+  if (d.caiask) { const q = rcVal('ai-q'); if (/\d{3}-?\d{2}-?\d{4}/.test(q)) return toast('Remove SSNs or other borrower identifiers'); return rcDo('cmp_ai_ask', { p_org: ORG(), p_question: q, p_case: null }, 'Question sent', drops); }
+  if (d.caiauditdl) { const A = RC.cache.cmpaudit || []; const txt = JSON.stringify({ organization: (RC.cache.cmpdash || {}).organization, chain: (RC.cache.cmpdash || {}).chain, exported_at: new Date().toISOString(), events: A }, null, 2); const h = await rcSha256(txt);
+    rcDownload(`Compliance-Audit-Trail-${new Date().toISOString().slice(0, 10)}.json`, txt, 'application/json'); return toast('Downloaded · SHA-256 ' + h.slice(0, 12) + '…'); }
+  if (d.pcsvc) { const [org, op] = d.pcsvc.split('|'); const states = rcVal('pa-s-' + org).split(/[\s,]+/).filter(Boolean).map((s) => s.toUpperCase()); const reason = rcVal('pa-r-' + org);
+    if (op !== 'save' && !reason) return toast('Enter the reason');
+    return rcDo('cmp_set_service', { p_org: org, p_enabled: op === 'save' ? true : op === 'on', p: { plan_code: rcVal('pa-p-' + org), states, reason: reason || 'Plan/states updated' } }, op === 'off' ? 'Compliance service disabled' : op === 'on' ? 'Compliance service enabled — the module now appears in that portal' : 'Saved', drops); }
+  if (d.pcreg) { const [id, dec] = d.pcreg.split('|'); const note = rcVal('ru-n-' + id); if (!note) return toast('Say what you checked'); return rcDo('cmp_reg_decide', { p_update: id, p_decision: dec, p_note: note, p_open_cases: true }, 'Decision recorded', drops); }
+  if (d.pcregadd) return rcDo('cmp_reg_update_add', { p: { title: rcVal('rn-t'), url: rcVal('rn-u'), jurisdiction: rcVal('rn-j') || 'US', citation: rcVal('rn-c') || null, effective_date: rcVal('rn-e') || null, summary: rcVal('rn-s') || null, topics: rcVal('rn-tp').split(/[\s,]+/).filter(Boolean) } }, 'Update recorded — impact analysed', drops);
+  if (d.pcrdy) { const [org, item] = d.pcrdy.split('|'); const note = rcVal('rr-n-' + item); if (!note) return toast('Say what you checked'); return rcDo('cmp_readiness_review', { p_org: org, p_item: item, p_status: rcVal('rr-s-' + item), p_note: note }, 'Review recorded', drops); }
+  if (d.pcplan) { const c = d.pcplan; return rcDo('cmp_save_plan', { p: { code: c, name: rcVal('pl-n-' + c), monthly_price: rcNum(rcVal('pl-p-' + c)), active: rcVal('pl-a-' + c) } }, 'Plan saved', drops); }
+  if (d.pcstaff) { const [u, r, op] = d.pcstaff.split('|'); return rcDo('cmp_set_staff', { p_user: u, p_role: r, p_active: op === 'on' }, 'Saved', drops); }
+  if (d.pcstaffadd) { const em = rcVal('st-e').toLowerCase(); if (!em) return toast('Enter the e-mail');
+    try { const rows = await rcSel('profiles', { cols: 'user_id, email', eq: { email: em } }); if (!rows || !rows.length) return toast('No LOS user with that e-mail — invite them first');
+      return rcDo('cmp_set_staff', { p_user: rows[0].user_id, p_role: rcVal('st-r'), p_active: true }, 'Added to compliance staff', drops); } catch (err) { return toast(err.message); } }
+});
+document.addEventListener('change', (e) => { const d = e.target.dataset || {}; if (d.pcorg) { S.pcompOrg = e.target.value; keepScroll(render); } });
 
 // ================================================================ Layout: side menu only (no top menu), fixed side menu, dashboard that fits the screen
 // On a computer screen (wider than 1100px) the top menu links are hidden — the side menu has the same pages — and the

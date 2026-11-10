@@ -109,6 +109,9 @@
       G.realLoans = realLoans; G.status = 'ready';
       // document provider (DocMagic or Propel): the company choice lives in organizations.settings, changed only through the audited RPC
       G.docLib = lib || [];
+      // GlobalNet Compliance AI: the module shows only when the service is on for this company (or for GlobalNet compliance staff)
+      try { const [{ data: ca }, { data: sr }] = await Promise.all([sb.from('cmp_accounts').select('enabled, status, plan_code, pilot').eq('org_id', G.orgId).maybeSingle(), sb.rpc('cmp_staff_role')]);
+        G.cmpEnabled = !!(ca && ca.enabled && !['suspended', 'cancelled'].includes(ca.status)); G.cmpAccount = ca || null; G.cmpStaff = sr || null; } catch { G.cmpEnabled = false; G.cmpStaff = null; }
       G.setDocProvider = async (p) => { const { error } = await sb.rpc('set_document_provider', { p_org: G.orgId, p_provider: p }); if (error) throw new Error(error.message); G.docProvider = p; };
       // start the LOS screens
       G.seedContacts = org?.data?.seedLenderContacts || null;
