@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in · GlobalNet LOS</title>
+<link rel="stylesheet" href="app.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+<header class="top"><a class="brand" href="./"><span class="mark">GN</span><span><b>GlobalNet LOS</b><span>Sign in</span></span></a><a class="btn sm" href="preview.html">Open the preview</a></header>
+<main class="center"><div class="card login">
+  <div id="step-auth">
+    <div class="tabs" role="tablist"><button class="on" data-mode="signin" role="tab">Sign in</button><button data-mode="signup" role="tab">Create account</button><button data-mode="link" role="tab">Email me a link</button></div>
+    <form id="f-auth" novalidate>
+      <label id="l-name" class="hide">Full name<input id="name" autocomplete="name"></label>
+      <label>Email<input id="email" type="email" autocomplete="username" required></label>
+      <label id="l-pw">Password<input id="pw" type="password" autocomplete="current-password" minlength="12"></label>
+      <p id="pw-hint" class="muted small hide">At least 12 characters.</p>
+      <button class="btn pri" id="go" type="submit" style="width:100%;justify-content:center">Sign in</button>
+    </form>
+    <p class="muted small">Staff accounts are created by invitation. Two-step sign-in is required for staff before any loan data is shown.</p>
+  </div>
+  <div id="step-enroll" class="hide">
+    <h2>Set up two-step sign-in</h2>
+    <p class="small">Scan this code with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…), then enter the 6-digit code.</p>
+    <div class="qr"><img id="qr" alt="QR code for your authenticator app"></div>
+    <p class="small muted">Can't scan? Enter this key: <code id="secret"></code></p>
+    <label>Code<input id="code-enroll" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>
+    <button class="btn pri" id="go-enroll" style="width:100%;justify-content:center">Turn on and continue</button>
+  </div>
+  <div id="step-mfa" class="hide">
+    <h2>Two-step verification</h2>
+    <p class="small">Enter the 6-digit code from your authenticator app.</p>
+    <label>Code<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>
+    <button class="btn pri" id="go-mfa" style="width:100%;justify-content:center">Verify</button>
+  </div>
+  <div id="msg" role="status" aria-live="polite"></div>
+</div></main>
+<script>
+const sb = supabase.createClient(GN_CONFIG.supabaseUrl, GN_CONFIG.supabaseKey);
+const $ = (s) => document.querySelector(s);
+let mode = 'signin', enrollFactor = null;
+const say = (t, kind = 'info') => { $('#msg').innerHTML = t ? `<div class="note ${kind}">${t}</div>` : ''; };
+const show = (id) => ['#step-auth', '#step-enroll', '#step-mfa'].forEach((s) => $(s).classList.toggle('hide', s !== id));
+const appUrl = () => new URL('los.html', location.href).href;
+
+document.querySelectorAll('[data-mode]').forEach((b) => b.onclick = () => {
+  mode = b.dataset.mode; document.querySelectorAll('[data-mode]').forEach((x) => x.classList.toggle('on', x === b));
+  $('#l-name').classList.toggle('hide', mode !== 'signup'); $('#l-pw').classList.toggle('hide', mode === 'link'); $('#pw-hint').classList.toggle('hide', mode !== 'signup');
+  $('#pw').autocomplete = mode === 'signup' ? 'new-password' : 'current-password';
+  $('#go').textContent = mode === 'signup' ? 'Create account' : mode === 'link' ? 'Email me a sign-in link' : 'Sign in'; say('');
+});
+
+$('#f-auth').onsubmit = async (e) => {
+  e.preventDefault(); const email = $('#email').value.trim().toLowerCase(), pw = $('#pw').value;
+  if (!/^\S+@\S+\.\S+$/.test(email)) return say('Enter a valid email.', 'bad');
+  $('#go').disabled = true;
+  try {
+    if (mode === 'link') {
+      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: appUrl(), shouldCreateUser: false } });
+      if (error) throw error; return say('If an account exists for that email, a sign-in link is on its way.', 'ok');
+    }
+    if (mode === 'signup') {
+      if (pw.length < 12) throw new Error('Use a password with at least 12 characters.');
+      const { data, error } = await sb.auth.signUp({ email, password: pw, options: { data: { full_name: $('#name').value.trim() }, emailRedirectTo: appUrl() } });
+      if (error) throw error;
+      if (!data.session) return say('Check your email and click the confirmation link, then come back and sign in.', 'ok');
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+      if (error) throw error;
+    }
+    await afterPassword();
+  } catch (err) { say(err.message || 'Sign-in failed.', 'bad'); }
+  finally { $('#go').disabled = false; }
+};
+
+async function afterPassword() {
+  const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal.currentLevel === 'aal2') return location.replace(appUrl());
+  const { data: f } = await sb.auth.mfa.listFactors();
+  const totp = (f?.totp || []).find((x) => x.status === 'verified');
+  if (totp) { enrollFactor = totp.id; show('#step-mfa'); say(''); return $('#code').focus(); }
+  // no verified factor yet: set one up now
+  for (const old of (f?.all || []).filter((x) => x.status !== 'verified')) await sb.auth.mfa.unenroll({ factorId: old.id });
+  const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Authenticator ' + new Date().toISOString().slice(0, 10) });
+  if (error) return say(error.message, 'bad');
+  enrollFactor = data.id; $('#qr').src = data.totp.qr_code; $('#secret').textContent = data.totp.secret; show('#step-enroll'); say(''); $('#code-enroll').focus();
+}
+async function verify(code) {
+  const { data: ch, error: e1 } = await sb.auth.mfa.challenge({ factorId: enrollFactor }); if (e1) return say(e1.message, 'bad');
+  const { error } = await sb.auth.mfa.verify({ factorId: enrollFactor, challengeId: ch.id, code: code.trim() });
+  if (error) return say('That code did not work. Try the newest code in your app.', 'bad');
+  location.replace(appUrl());
+}
+$('#go-mfa').onclick = () => verify($('#code').value);
+$('#go-enroll').onclick = () => verify($('#code-enroll').value);
+['#code', '#code-enroll'].forEach((s) => $(s).addEventListener('keydown', (e) => { if (e.key === 'Enter') verify(e.target.value); }));
+
+// already signed in (e.g. coming back from an email link)
+sb.auth.getSession().then(({ data }) => { if (data.session) afterPassword(); });
+</script>
+</body>
+</html>

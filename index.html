@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-app-url="" data-preview-url="app.html">
+<html lang="en" data-app-url="" data-preview-url="preview.html">
 <!-- data-app-url: the platform address, e.g. https://app.globalnetmortgage.com — when set, "Sign in" opens its /login?as=… page.
      Empty: the menu opens the clickable MVP preview instead. -->
 <head>
@@ -240,7 +240,7 @@ a{color:#12354f}a:hover{color:#0d7f73}
 <script>
 (function(){var root=document.documentElement,app=(root.dataset.appUrl||'').replace(/\/+$/,''),prev=root.dataset.previewUrl;
 document.querySelectorAll('[data-as]').forEach(function(a){var k=a.getAttribute('data-as');
-a.href='app.html?as='+encodeURIComponent(k);});})();
+a.href='login.html?as='+encodeURIComponent(k);});})();
 (function(){var b=document.getElementById('signin-btn'),m=document.getElementById('signin-menu');
 function set(o){m.hidden=!o;b.setAttribute('aria-expanded',String(o));}
 b.addEventListener('click',function(e){e.stopPropagation();set(m.hidden);if(!m.hidden){var f=m.querySelector('a');if(f)f.focus();}});
