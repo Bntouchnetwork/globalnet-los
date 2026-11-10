@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign documents · GlobalNet LOS</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="app.css">
+<style>
+body{min-height:100vh}.sg{max-width:980px;margin:0 auto;padding:16px}.sgbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.docs{display:grid;grid-template-columns:220px minmax(0,1fr);gap:12px;align-items:start}.docnav{display:flex;flex-direction:column;gap:4px;position:sticky;top:8px}
+.docnav button{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font:inherit;cursor:pointer;color:var(--ink)}.docnav button.on{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.docnav small{display:block;color:var(--muted)}iframe.doc{width:100%;height:72vh;border:1px solid var(--line);border-radius:10px;background:#fff}
+.sigpad{border:1px dashed var(--line);border-radius:8px;background:#fff;touch-action:none;width:100%;height:140px}
+.typed{font:italic 34px 'Brush Script MT','Segoe Script','Lucida Handwriting',cursive;color:#0b2a63;padding:8px 12px;border-bottom:1px solid var(--line);min-height:56px}
+.fields li{margin:2px 0}.consent{max-height:220px;overflow:auto;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:.9rem}
+@media (max-width:760px){.docs{grid-template-columns:1fr}.docnav{position:static;flex-direction:row;overflow-x:auto}.docnav button{min-width:180px}iframe.doc{height:60vh}}
+</style>
+</head>
+<body>
+<header class="top"><span class="brand"><span class="mark">GN</span><span><b>GlobalNet LOS</b><span>Secure document signing</span></span></span><span class="pill" id="mode"></span></header>
+<main class="sg" id="main"><div class="card"><p class="muted">Loading…</p></div></main>
+<script>
+const P = new URLSearchParams(location.search); const TOKEN = P.get('t') || ''; const LOCAL = true; // site without database: envelopes live in this browser (preview mode)
+const $ = (s) => document.querySelector(s); const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const when = (t) => { try { return new Date(t).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch { return t || ''; } };
+const sb = LOCAL ? null : supabase.createClient(GN_CONFIG.supabaseUrl, GN_CONFIG.supabaseKey);
+let CODE = '', DATA = null, CUR = 0, SIG = null;
+$('#mode').textContent = LOCAL ? 'Preview (this browser only)' : 'Secure';
+
+// ---- data access: live (Supabase) or local preview (same browser)
+const LKEY = 'gn-esign-local';
+const ldb = () => { try { return JSON.parse(localStorage.getItem(LKEY) || '{"envelopes":[]}'); } catch { return { envelopes: [] }; } };
+const lsave = (db) => localStorage.setItem(LKEY, JSON.stringify(db));
+async function sha(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
+function lfind(db) { for (const e of db.envelopes) { const r = e.recipients.find((x) => x.token === TOKEN); if (r) return { e, r }; } return {}; }
+function llog(e, r, event, detail) { e.events.push({ at: new Date().toISOString(), event, actor: r ? r.name : 'System', ip: 'this browser', user_agent: navigator.userAgent.slice(0, 120), detail: detail || null }); }
+function lcheck(db) { const { e, r } = lfind(db); if (!r) return { error: 'This signing link is not valid.' }; if (e.status === 'voided') return { error: 'This envelope was cancelled by the sender.' };
+  if (r.locked) return { error: 'Too many wrong codes. Ask the sender for a new access code.' };
+  if (r.code !== CODE) { r.attempts = (r.attempts || 0) + 1; r.locked = r.attempts >= 5; llog(e, r, 'wrong_code'); lsave(db); return { error: r.locked ? 'Too many wrong codes. Ask the sender for a new access code.' : 'That access code is not right.' }; }
+  r.attempts = 0; return { e, r }; }
+const api = {
+  async open() { if (!LOCAL) { const { data, error } = await sb.rpc('esign_signer_open', { p_token: TOKEN, p_code: CODE }); if (error) return { error: error.message }; return data; }
+    const db = ldb(); const c = lcheck(db); if (c.error) return c; const { e, r } = c; if (!r.opened_at) { r.opened_at = new Date().toISOString(); if (r.status === 'sent') r.status = 'opened'; } llog(e, r, 'opened'); lsave(db);
+    return { envelope: { title: e.title, message: e.message, status: e.status, from: e.from, company: e.company }, me: { id: r.id, name: r.name, role: r.role, consent_at: r.consent_at, signed_at: r.signed_at, status: r.status },
+      documents: e.documents.map((d) => ({ id: d.id, name: d.name, kind: d.kind, content: d.content, sha256: d.sha256 })), fields: e.fields.map((f) => ({ ...f, mine: f.recipient_id === r.id, signer: e.recipients.find((x) => x.id === f.recipient_id)?.name })) }; },
+  async consent() { if (!LOCAL) { const { data, error } = await sb.rpc('esign_signer_consent', { p_token: TOKEN, p_code: CODE }); return error ? { error: error.message } : data; }
+    const db = ldb(); const c = lcheck(db); if (c.error) return c; if (!c.r.consent_at) { c.r.consent_at = new Date().toISOString(); llog(c.e, c.r, 'consented', { text: 'Agreed to use electronic records and signatures (E-SIGN Act)' }); } lsave(db); return { ok: true }; },
+  async sign(signature, values) { if (!LOCAL) { const { data, error } = await sb.rpc('esign_signer_sign', { p_token: TOKEN, p_code: CODE, p_signature: signature, p_values: values }); return error ? { error: error.message } : data; }
+    const db = ldb(); const c = lcheck(db); if (c.error) return c; const { e, r } = c; if (e.status !== 'sent') return { error: 'This envelope is ' + e.status + '.' }; if (r.signed_at) return { error: 'You already signed.' }; if (!r.consent_at) return { error: 'Agree to sign electronically first.' };
+    const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    for (const f of e.fields.filter((x) => x.recipient_id === r.id)) { f.value = f.type === 'signature' ? signature : f.type === 'date' ? today : f.type === 'initials' ? (values[f.id] || r.name.split(' ').map((p) => p[0]).join('').slice(0, 3).toUpperCase()) : values[f.id] || ''; f.signed_at = new Date().toISOString(); }
+    r.signature = signature; r.signed_at = new Date().toISOString(); r.status = 'signed'; llog(e, r, 'signed', { fields: e.fields.filter((x) => x.recipient_id === r.id).length });
+    const done = e.recipients.every((x) => x.signed_at); if (done) { e.status = 'completed'; e.completed_at = new Date().toISOString(); e.final_hash = await sha(e.documents.map((d) => d.sha256).join('|') + '#' + e.fields.map((f) => f.id + '=' + (f.value || '')).join('|')); llog(e, null, 'completed', { final_hash: e.final_hash }); }
+    lsave(db); return { completed: done }; },
+  async certificate() { if (!LOCAL) { const { data, error } = await sb.rpc('esign_signer_certificate', { p_token: TOKEN, p_code: CODE }); return error ? { error: error.message } : data; }
+    const db = ldb(); const c = lcheck(db); if (c.error) return c; const e = c.e;
+    return { envelope: { id: e.id, title: e.title, status: e.status, created_at: e.created_at, completed_at: e.completed_at, final_hash: e.final_hash, from: e.from, company: e.company }, documents: e.documents.map((d) => ({ name: d.name, sha256: d.sha256 })),
+      recipients: e.recipients.map((r) => ({ name: r.name, role: r.role, email: r.email, consent_at: r.consent_at, opened_at: r.opened_at, signed_at: r.signed_at, status: r.status, signature: r.signature })), events: e.events }; },
+};
+
+// ---- screens
+function codeScreen(msg) {
+  $('#main').innerHTML = `<div class="card" style="max-width:440px;margin:40px auto"><h1>Enter your access code</h1><p class="small">For your security, these documents open only with the 6-digit code the sender gave you separately (by text message or phone).</p>
+    <label>Access code<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"></label>${msg ? `<div class="note bad">${esc(msg)}</div>` : ''}
+    <button class="btn pri" id="go" style="width:100%;justify-content:center">Open documents</button><p class="muted small">Never share this code. GlobalNet Mortgage will never ask for your password or full Social Security number here.</p></div>`;
+  $('#code').focus(); const go = async () => { CODE = $('#code').value.trim(); if (!/^\d{6}$/.test(CODE)) return codeScreen('Enter the 6 digits.'); const r = await api.open(); if (r.error) return codeScreen(r.error); DATA = r; route(); };
+  $('#go').onclick = go; $('#code').onkeydown = (e) => { if (e.key === 'Enter') go(); };
+}
+function route() { const me = DATA.me; if (me.signed_at || DATA.envelope.status !== 'sent') return doneScreen(); if (!me.consent_at) return consentScreen(); docsScreen(); }
+function consentScreen() {
+  const E = DATA.envelope;
+  $('#main').innerHTML = `<div class="card"><div class="sgbar"><div><h1>${esc(E.title)}</h1><p class="muted small">From ${esc(E.from || '')} · ${esc(E.company || '')}</p></div></div>${E.message ? `<p>${esc(E.message)}</p>` : ''}
+    <h2>Consent to use electronic records and signatures</h2>
+    <div class="consent"><p>Before you sign, please read this notice. By agreeing, you consent to receive the documents in this envelope electronically and to sign them with an electronic signature, which has the same legal effect as a handwritten signature (federal E-SIGN Act).</p>
+      <ul><li>You may ask for paper copies at no charge, and you may withdraw this consent at any time by contacting the sender. Withdrawing does not affect documents already signed.</li>
+      <li>To access and keep these documents you need a current web browser and the ability to save or print web pages or PDF files.</li>
+      <li>If your email address or phone number changes, tell the sender.</li></ul></div>
+    <label class="ck" style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="agree" style="width:auto"> I have read this notice and agree to use electronic records and signatures.</label>
+    <button class="btn pri" id="go">Continue</button></div>`;
+  $('#go').onclick = async () => { if (!$('#agree').checked) return alert('Check the box to agree first.'); const r = await api.consent(); if (r.error) return codeScreen(r.error); DATA.me.consent_at = new Date().toISOString(); docsScreen(); };
+}
+function fillDoc(doc) {
+  if (doc.kind !== 'html') return null;
+  let h = doc.content; for (const f of DATA.fields.filter((x) => x.document_id === doc.id && x.anchor)) {
+    const mine = f.mine; const preview = mine && SIG && !f.value ? (f.type === 'signature' ? (SIG.startsWith('data:') ? `<img src="${SIG}" alt="">` : esc(SIG)) : f.type === 'date' ? new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '') : '';
+    const v = f.value || preview; const done = !!v;
+    const inner = done ? (f.type === 'signature' && /^data:image/.test(v) ? `<img src="${v}" alt="">` : /^</.test(v) ? v : esc(v)) : esc(mine ? (f.type === 'date' ? 'Date' : 'Sign here') : `${f.signer || 'Other signer'}`);
+    h = h.replace(new RegExp(`<span data-sign="${f.anchor}"[^>]*></span>`), `<span class="es-f ${done ? 'done' : ''} ${f.type === 'date' ? 'date' : ''} ${mine ? 'mine' : ''}">${inner}</span>`); }
+  return h;
+}
+function docsScreen() {
+  const D = DATA.documents; const mine = DATA.fields.filter((f) => f.mine); const d = D[CUR];
+  $('#main').innerHTML = `<div class="sgbar"><div><h1 style="margin:0">${esc(DATA.envelope.title)}</h1><p class="muted small" style="margin:0">Signing as <b>${esc(DATA.me.name)}</b> · ${D.length} document${D.length > 1 ? 's' : ''} · ${mine.length} field${mine.length === 1 ? '' : 's'} to complete</p></div><button class="btn pri" id="tofinish">Adopt signature &amp; finish</button></div>
+    <div class="docs" style="margin-top:10px"><nav class="docnav" aria-label="Documents">${D.map((x, i) => `<button data-doc="${i}" class="${i === CUR ? 'on' : ''}">${esc(x.name)}<small>${DATA.fields.filter((f) => f.mine && f.document_id === x.id).length} to sign</small></button>`).join('')}</nav>
+      <div>${d.kind === 'html' ? `<iframe class="doc" sandbox="" title="${esc(d.name)}"></iframe>` : `<iframe class="doc" title="${esc(d.name)}"></iframe><p class="muted small">PDF document · your signature and date are recorded for this document when you finish.</p>`}</div></div>
+    <div class="card" id="finish"><h2>Adopt your signature</h2><div class="tabs" role="tablist"><button class="on" data-st="type">Type</button><button data-st="draw">Draw</button></div>
+      <div id="sigarea"></div>
+      <p class="small">Fields you will sign:</p><ul class="fields small">${mine.map((f) => `<li>${esc(f.label || f.type)} · ${esc(D.find((x) => x.id === f.document_id)?.name || '')}</li>`).join('')}</ul>
+      <label class="ck" style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="intent" style="width:auto"> I agree that this is my electronic signature and I intend to sign these documents.</label>
+      <div class="row"><button class="btn pri" id="sign">Sign all and finish</button><span id="msg"></span></div></div>`;
+  const fr = $('iframe.doc');
+  if (d.kind === 'html') fr.srcdoc = fillDoc(d); else { try { const b64 = d.content.split(',')[1]; const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); fr.src = URL.createObjectURL(new Blob([u], { type: 'application/pdf' })); } catch { fr.replaceWith(Object.assign(document.createElement('p'), { textContent: 'This PDF could not be displayed in the browser.' })); } }
+  document.querySelectorAll('[data-doc]').forEach((b) => b.onclick = () => { CUR = +b.dataset.doc; docsScreen(); });
+  $('#tofinish').onclick = () => $('#finish').scrollIntoView({ behavior: 'smooth' });
+  let mode = 'type'; const area = () => { if (mode === 'type') { $('#sigarea').innerHTML = `<label>Your full name<input id="tn" value="${esc(SIG && !SIG.startsWith('data:') ? SIG : DATA.me.name)}"></label><div class="typed" id="tp"></div>`; const up = () => { $('#tp').textContent = $('#tn').value; }; $('#tn').oninput = () => { up(); SIG = $('#tn').value.trim(); }; up(); SIG = $('#tn').value.trim(); }
+    else { $('#sigarea').innerHTML = '<canvas class="sigpad" id="pad" aria-label="Draw your signature"></canvas><div class="row"><button class="btn sm" id="clr">Clear</button></div>'; pad(); } };
+  document.querySelectorAll('[data-st]').forEach((b) => b.onclick = () => { mode = b.dataset.st; document.querySelectorAll('[data-st]').forEach((x) => x.classList.toggle('on', x === b)); SIG = null; area(); }); area();
+  $('#sign').onclick = async () => { if (!$('#intent').checked) return ($('#msg').innerHTML = '<span class="note bad">Check the box to confirm your intent to sign.</span>'); if (!SIG) return ($('#msg').innerHTML = '<span class="note bad">Type or draw your signature.</span>');
+    $('#sign').disabled = true; const r = await api.sign(SIG, {}); $('#sign').disabled = false; if (r.error) return ($('#msg').innerHTML = `<span class="note bad">${esc(r.error)}</span>`);
+    const again = await api.open(); if (!again.error) DATA = again; doneScreen(r.completed); };
+}
+function pad() { const c = $('#pad'); const r = c.getBoundingClientRect(); c.width = r.width * 2; c.height = r.height * 2; const x = c.getContext('2d'); x.scale(2, 2); x.lineWidth = 2.4; x.lineCap = 'round'; x.strokeStyle = '#0b2a63'; let on = false, drew = false;
+  const p = (e) => { const b = c.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return [t.clientX - b.left, t.clientY - b.top]; };
+  c.onpointerdown = (e) => { on = true; c.setPointerCapture(e.pointerId); x.beginPath(); x.moveTo(...p(e)); }; c.onpointermove = (e) => { if (!on) return; x.lineTo(...p(e)); x.stroke(); drew = true; };
+  c.onpointerup = () => { on = false; if (drew) SIG = c.toDataURL('image/png'); }; $('#clr').onclick = () => { x.clearRect(0, 0, c.width, c.height); SIG = null; drew = false; }; }
+function doneScreen(justCompleted) {
+  const E = DATA.envelope; const me = DATA.me;
+  $('#main').innerHTML = `<div class="card" style="max-width:560px;margin:30px auto;text-align:center"><h1>${E.status === 'voided' ? 'This envelope was cancelled' : me.signed_at ? 'Thank you — you have signed' : 'Nothing to sign'}</h1>
+    <p>${E.status === 'completed' || justCompleted ? 'All parties have signed. The sender has the completed documents and the certificate.' : me.signed_at ? 'We will let the other signers know. The sender receives the completed documents when everyone has signed.' : ''}</p>
+    <div class="row" style="justify-content:center"><button class="btn" id="cert">View audit certificate</button></div></div>`;
+  $('#cert')?.addEventListener('click', async () => { const c = await api.certificate(); if (c.error) return alert(c.error); const w = window.open('', '_blank'); if (!w) return alert('Allow pop-ups to open the certificate.');
+    w.document.write(`<!doctype html><title>Certificate</title><body style="font:13px Arial;max-width:820px;margin:20px auto"><h2>Certificate of Completion</h2><p>${esc(c.envelope.title)} · ${esc(c.envelope.status)}${c.envelope.final_hash ? `<br>Final hash: <code>${esc(c.envelope.final_hash)}</code>` : ''}</p>
+      <h3>Signers</h3><ul>${c.recipients.map((r) => `<li>${esc(r.name)} — ${esc(r.status)}${r.signed_at ? ' · signed ' + esc(when(r.signed_at)) : ''}</li>`).join('')}</ul>
+      <h3>Audit trail</h3><table border="1" cellpadding="4" style="border-collapse:collapse;width:100%"><tr><th>When</th><th>Event</th><th>By</th><th>IP</th></tr>${(c.events || []).map((e) => `<tr><td>${esc(when(e.at))}</td><td>${esc(e.event)}</td><td>${esc(e.actor || '')}</td><td>${esc(e.ip || '')}</td></tr>`).join('')}</table><p><button onclick="print()">Print / Save as PDF</button></p></body>`); w.document.close(); });
+}
+if (!TOKEN) $('#main').innerHTML = '<div class="card"><h1>Link incomplete</h1><p>Open the signing link exactly as you received it.</p></div>'; else codeScreen();
+</script>
+</body>
+</html>

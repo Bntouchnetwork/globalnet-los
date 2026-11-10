@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en" data-app-url="" data-preview-url="app.html">
+<!-- data-app-url: the platform address, e.g. https://app.globalnetmortgage.com — when set, "Sign in" opens its /login?as=… page.
+     Empty: the menu opens the clickable MVP preview instead. -->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GlobalNet LOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{--accent:#0d7f73}
+html{scroll-behavior:smooth}
+body{margin:0;background:#f3f5f7}
+[role=menu] a:hover,[role=menu] a:focus-visible{background:#f3f5f7;outline:none}
+a:focus-visible,button:focus-visible{outline:2px solid #0d7f73;outline-offset:2px}
+section[id]{scroll-margin-top:84px}
+@media (max-width:640px){h1{font-size:38px!important}h2{font-size:28px!important}#signin-menu{position:fixed!important;left:16px!important;right:16px!important;top:72px!important;width:auto!important}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+a{color:#12354f}a:hover{color:#0d7f73}
+</style>
+</head>
+<body>
+<div style="font-family: 'Public Sans', system-ui, sans-serif; color: #142231; background: #f3f5f7; min-height: 100vh">
+
+<header style="position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,0.96); border-bottom: 1px solid #dde3ea">
+<div style="max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+<a href="#top" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #142231">
+<span style="width: 36px; height: 36px; border-radius: 9px; background: #12354f; color: #ffffff; display: grid; place-items: center; font-weight: 800; font-size: 13px; letter-spacing: 0.04em">GN</span>
+<span style="font-weight: 800; font-size: 17px">GlobalNet <span style="color: #0d7f73">LOS</span></span>
+</a>
+<div style="position: relative">
+<button type="button" id="signin-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="signin-menu" style="display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 1px solid #dde3ea; border-radius: 10px; background: #ffffff; color: #142231; font: inherit; font-weight: 600; cursor: pointer">Sign in<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+<div id="signin-menu" hidden role="menu" style="position: absolute; left: 0; top: calc(100% + 8px); width: 280px; background: #ffffff; border: 1px solid #dde3ea; border-radius: 12px; box-shadow: 0 14px 36px rgba(18,53,79,0.18); padding: 6px; display: flex; flex-direction: column">
+<a role="menuitem" href="#signin-broker" data-as="broker" style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #142231"><b style="font-size: 14px">Broker admin</b><span style="font-size: 12px; color: #4b5b6c">Company settings, MLOs, lenders, QC</span></a>
+<a role="menuitem" href="#signin-mlo" data-as="mlo" style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #142231"><b style="font-size: 14px">Loan officer</b><span style="font-size: 12px; color: #4b5b6c">Pipeline, CRM, applications</span></a>
+<a role="menuitem" href="#signin-processor" data-as="processor" style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #142231"><b style="font-size: 14px">Processor</b><span style="font-size: 12px; color: #4b5b6c">Processing queue and lender submission</span></a>
+<div style="height: 1px; background: #dde3ea; margin: 4px 6px"></div>
+<a role="menuitem" href="#signin-borrower" data-as="borrower" style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #142231"><b style="font-size: 14px">Borrower portal</b><span style="font-size: 12px; color: #4b5b6c">Upload documents and follow your loan</span></a>
+</div>
+</div>
+<a href="#pricing" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 10px; background: var(--accent); color: #ffffff; font-weight: 700; text-decoration: none">Sign up</a>
+</div>
+<nav aria-label="Main" style="display: flex; gap: 22px; flex-wrap: wrap; font-weight: 600; font-size: 15px">
+<a href="#features" style="text-decoration: none">Features</a>
+<a href="#how" style="text-decoration: none">How it works</a>
+<a href="#pricing" style="text-decoration: none">Pricing</a>
+<a href="#security" style="text-decoration: none">Security</a>
+</nav>
+</div>
+</header>
+
+<section id="top" style="max-width: 1200px; margin: 0 auto; padding: 72px 24px 56px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
+<div style="flex: 1 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 22px">
+<span style="align-self: flex-start; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; color: #0b6b61; background: #dff2ef; padding: 6px 12px; border-radius: 999px">Loan origination for mortgage brokers</span>
+<h1 style="margin: 0; font-size: 54px; line-height: 1.06; font-weight: 800; letter-spacing: -0.02em; color: #12354f">Close more loans. Let the AI agents handle the file.</h1>
+<p style="margin: 0; font-size: 19px; line-height: 1.55; color: #3d4c5c">GlobalNet LOS takes a loan from lead to post-closing in one place: CRM and client portal, the 1003, disclosures on time, a Virtual Processor that audits the file, and documents that stay in your own Google Workspace.</p>
+<div style="display: flex; gap: 12px; flex-wrap: wrap">
+<a href="#pricing" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 10px; background: var(--accent); color: #ffffff; font-weight: 700; font-size: 16px; text-decoration: none">Sign up</a>
+<a href="#demo" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 10px; background: #ffffff; border: 1px solid #c9d3dd; color: #12354f; font-weight: 700; font-size: 16px; text-decoration: none">Book a demo</a>
+</div>
+<p style="margin: 0; font-size: 14px; color: #4b5b6c">Nothing goes to a borrower, lender or vendor without a person's approval.</p>
+</div>
+<div style="flex: 1 1 460px; min-width: 0">
+<div style="background: #ffffff; border: 1px solid #dde3ea; border-radius: 16px; box-shadow: 0 20px 50px rgba(18,53,79,0.12); padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap"><b style="font-size: 15px">Pipeline</b><span style="font-size: 12px; color: #4b5b6c">Sample data</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="background: #f3f5f7; border-radius: 10px; padding: 10px 12px"><div style="font-size: 12px; color: #4b5b6c">Active loans</div><div style="font-size: 22px; font-weight: 800">24</div></div>
+<div style="background: #f3f5f7; border-radius: 10px; padding: 10px 12px"><div style="font-size: 12px; color: #4b5b6c">Clear to close</div><div style="font-size: 22px; font-weight: 800">5</div></div>
+<div style="background: #f3f5f7; border-radius: 10px; padding: 10px 12px"><div style="font-size: 12px; color: #4b5b6c">Disclosures due</div><div style="font-size: 22px; font-weight: 800; color: #9a5b00">2</div></div>
+</div>
+<div style="display: flex; flex-direction: column">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 4px; border-top: 1px solid #e8edf2"><div><b style="font-size: 14px">GN100231 · Ribeiro</b><div style="font-size: 12px; color: #4b5b6c">Conventional · Purchase · $340,000</div></div><span style="font-size: 12px; font-weight: 700; color: #12354f; background: #e5eef8; padding: 3px 10px; border-radius: 999px">Processing</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 4px; border-top: 1px solid #e8edf2"><div><b style="font-size: 14px">GN100228 · Webb</b><div style="font-size: 12px; color: #4b5b6c">Non-QM · DSCR · $296,000</div></div><span style="font-size: 12px; font-weight: 700; color: #0b6b61; background: #dff2ef; padding: 3px 10px; border-radius: 999px">Virtual Processor</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 4px; border-top: 1px solid #e8edf2"><div><b style="font-size: 14px">GN100207 · Natarajan</b><div style="font-size: 12px; color: #4b5b6c">Jumbo · Refinance · $1,150,000</div></div><span style="font-size: 12px; font-weight: 700; color: #17803d; background: #e4f4e9; padding: 3px 10px; border-radius: 999px">Clear to Close</span></div>
+</div>
+<div style="display: flex; gap: 10px; align-items: flex-start; background: #f3f5f7; border-radius: 10px; padding: 12px">
+<span style="flex: none; width: 28px; height: 28px; border-radius: 8px; background: #12354f; color: #ffffff; display: grid; place-items: center; font-size: 12px; font-weight: 800">AI</span>
+<div style="font-size: 13px; line-height: 1.45"><b>Smart Audit · GN100231</b><br>W-2 2025 and insurance binder missing. Request drafted for your approval.</div>
+</div>
+</div>
+</div>
+</section>
+
+<section aria-label="Who it is for" style="background: #12354f; color: #ffffff">
+<div style="max-width: 1200px; margin: 0 auto; padding: 22px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px 32px; font-weight: 600; font-size: 15px">
+<span>For broker owners</span><span>For loan officers</span><span>For in-house and contract processors</span><span>Borrower portal included</span>
+</div>
+</section>
+
+<section id="features" style="max-width: 1200px; margin: 0 auto; padding: 80px 24px; display: flex; flex-direction: column; gap: 36px">
+<div style="display: flex; flex-direction: column; gap: 10px; max-width: 720px">
+<h2 style="margin: 0; font-size: 38px; line-height: 1.15; font-weight: 800; color: #12354f; letter-spacing: -0.01em">Everything a brokerage runs on, in one system</h2>
+<p style="margin: 0; font-size: 17px; line-height: 1.55; color: #3d4c5c">Built around how brokers actually work: the MLO owns the borrower, the processor owns the file, and the broker stays compliant.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+<div style="background: #ffffff; border: 1px solid #dde3ea; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h12"></path></svg>
+<h3 style="margin: 0; font-size: 18px">Pipeline and the 1003</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3d4c5c">The redesigned URLA in form, classic and loan-information views, with live LTV, DTI, PITIA and cash to close.</p>
+</div>
+<div style="background: #ffffff; border: 1px solid #dde3ea; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.5-.8z"></path></svg>
+<h3 style="margin: 0; font-size: 18px">Virtual Processor and Smart Audit</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3d4c5c">AI agents review the file, flag what is missing, stack it in lender order and draft every request for your approval.</p>
+</div>
+<div style="background: #ffffff; border: 1px solid #dde3ea; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+<h3 style="margin: 0; font-size: 18px">Compliance clock</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3d4c5c">Disclosure, withdrawal, denial and adverse-action deadlines tracked per loan, with reminders before anything is late.</p>
+</div>
+<div style="background: #ffffff; border: 1px solid #dde3ea; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"></path></svg>
+<h3 style="margin: 0; font-size: 18px">Documents stay in your Drive</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3d4c5c">Loan folders live in your company's Google Workspace Shared Drives. The LOS shows them and keeps a fingerprint of each version.</p>
+</div>
+<div style="background: #ffffff; border: 1px solid #dde3ea; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18 14.8c1.8.8 3 2.6 3.5 5.2"></path></svg>
+<h3 style="margin: 0; font-size: 18px">CRM and client portal</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3d4c5c">Email the application link and portal access, with a document checklist for each loan type: full doc, bank statement, P&amp;L, foreign national and DSCR.</p>
+</div>
+<div style="background: #ffffff; border: 1px solid #dde3ea; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10l8-6 8 6v10M9 20v-6h6v6"></path></svg>
+<h3 style="margin: 0; font-size: 18px">Lenders, CTC and post-closing</h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3d4c5c">Your lender list fills Loan Estimate fees, the CTC folder syncs after approval, and the QC agent follows up until the post-closing file is complete.</p>
+</div>
+</div>
+</section>
+
+<section id="how" style="background: #ffffff; border-top: 1px solid #dde3ea; border-bottom: 1px solid #dde3ea">
+<div style="max-width: 1200px; margin: 0 auto; padding: 80px 24px; display: flex; flex-direction: column; gap: 36px">
+<h2 style="margin: 0; font-size: 38px; line-height: 1.15; font-weight: 800; color: #12354f; letter-spacing: -0.01em">From lead to funded, without the chase</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px">
+<li style="display: flex; flex-direction: column; gap: 8px; border-top: 3px solid #12354f; padding-top: 16px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #0b6b61">01</span><b style="font-size: 17px">Lead</b><span style="font-size: 15px; line-height: 1.5; color: #3d4c5c">The MLO sends the application link and portal access from the CRM.</span></li>
+<li style="display: flex; flex-direction: column; gap: 8px; border-top: 3px solid #12354f; padding-top: 16px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #0b6b61">02</span><b style="font-size: 17px">Application</b><span style="font-size: 15px; line-height: 1.5; color: #3d4c5c">The borrower completes the 1003 and uploads documents from the checklist.</span></li>
+<li style="display: flex; flex-direction: column; gap: 8px; border-top: 3px solid #12354f; padding-top: 16px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #0b6b61">03</span><b style="font-size: 17px">Processing</b><span style="font-size: 15px; line-height: 1.5; color: #3d4c5c">Assign a processor from the pipeline. The Smart Audit gets the file lender-ready.</span></li>
+<li style="display: flex; flex-direction: column; gap: 8px; border-top: 3px solid #12354f; padding-top: 16px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #0b6b61">04</span><b style="font-size: 17px">Clear to close</b><span style="font-size: 15px; line-height: 1.5; color: #3d4c5c">Conditions cleared, the CTC folder syncs and closing documents go out on time.</span></li>
+<li style="display: flex; flex-direction: column; gap: 8px; border-top: 3px solid #12354f; padding-top: 16px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #0b6b61">05</span><b style="font-size: 17px">Post-closing</b><span style="font-size: 15px; line-height: 1.5; color: #3d4c5c">The audit builds the package and the QC manager approves it.</span></li>
+</ol>
+</div>
+</section>
+
+<section id="pricing" style="max-width: 1200px; margin: 0 auto; padding: 80px 24px; display: flex; flex-direction: column; gap: 36px">
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center">
+<h2 style="margin: 0; font-size: 38px; line-height: 1.15; font-weight: 800; color: #12354f; letter-spacing: -0.01em">Choose your package</h2>
+<p style="margin: 0; font-size: 17px; color: #3d4c5c">Monthly plans. Add loan assistants at $75 per additional seat.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; align-items: stretch">
+
+<div style="background: #ffffff; border: 1px solid #dde3ea; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 6px"><h3 style="margin: 0; font-size: 22px">Broker Basic</h3><p style="margin: 0; font-size: 15px; color: #3d4c5c">For brokerages getting off spreadsheets and email.</p></div>
+<div style="display: flex; align-items: baseline; gap: 6px"><span style="font-size: 40px; font-weight: 800; color: #12354f">[$ price]</span><span style="font-size: 15px; color: #4b5b6c">/ month</span></div>
+<a href="#signup-basic" style="display: flex; justify-content: center; align-items: center; min-height: 48px; border-radius: 10px; border: 1px solid #12354f; color: #12354f; font-weight: 700; text-decoration: none">Sign up for Basic</a>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.4">
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Pipeline and URLA 1003</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>CRM, application link and client portal</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Document checklists by loan type</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Documents in your Google Workspace</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Compliance clock for disclosures and notices</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Lender list with Loan Estimate fee fill</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Pre-approval letters</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Up to [N] loan officers</li>
+</ul>
+</div>
+
+<div style="background: #12354f; color: #ffffff; border: 1px solid #12354f; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 20px 50px rgba(18,53,79,0.25)">
+<div style="display: flex; flex-direction: column; gap: 6px"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap"><h3 style="margin: 0; font-size: 22px">Broker Elite</h3><span style="font-size: 12px; font-weight: 700; color: #12354f; background: #9fe3d8; padding: 4px 10px; border-radius: 999px">Recommended</span></div><p style="margin: 0; font-size: 15px; color: #d3dee8">The full system with AI agents doing the processing work.</p></div>
+<div style="display: flex; align-items: baseline; gap: 6px"><span style="font-size: 40px; font-weight: 800">[$ price]</span><span style="font-size: 15px; color: #d3dee8">/ month</span></div>
+<a href="#signup-elite" style="display: flex; justify-content: center; align-items: center; min-height: 48px; border-radius: 10px; background: var(--accent); color: #ffffff; font-weight: 700; text-decoration: none">Sign up for Elite</a>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.4">
+<li style="display: flex; gap: 10px; font-weight: 700"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9fe3d8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Everything in Broker Basic</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9fe3d8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Virtual Processor and Virtual Assistant</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9fe3d8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Smart Audit with stacked, lender-ready file</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9fe3d8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Post-closing audit and Broker QC agent</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9fe3d8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Connectors: Gmail, Drive, DocuSign, lender portals</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9fe3d8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Lender submission with approvals</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9fe3d8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Reports, MCR and HMDA</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9fe3d8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Up to [N] loan officers</li>
+</ul>
+</div>
+
+<div style="background: #ffffff; border: 1px solid #dde3ea; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 6px"><h3 style="margin: 0; font-size: 22px">Processor</h3><p style="margin: 0; font-size: 15px; color: #3d4c5c">For in-house and contract processors working files for one or more brokers.</p></div>
+<div style="display: flex; align-items: baseline; gap: 6px"><span style="font-size: 40px; font-weight: 800; color: #12354f">[$ price]</span><span style="font-size: 15px; color: #4b5b6c">/ month</span></div>
+<a href="#signup-processor" style="display: flex; justify-content: center; align-items: center; min-height: 48px; border-radius: 10px; border: 1px solid #12354f; color: #12354f; font-weight: 700; text-decoration: none">Sign up as a processor</a>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.4">
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>One queue for every broker that assigns you</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Intake from email and drive, with AI filing</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Smart Audit and conditions tracking</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Access to the client submission folder through the LOS</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Document requests sent after approval</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Lender portal submission</li>
+<li style="display: flex; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d7f73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M5 12l5 5 9-10"></path></svg>Sees only the loans assigned to you</li>
+</ul>
+</div>
+
+</div>
+<p style="margin: 0; text-align: center; font-size: 14px; color: #4b5b6c">Lender, credit, appraisal and e-signature vendor fees are billed by those vendors.</p>
+</section>
+
+<section id="security" style="background: #ffffff; border-top: 1px solid #dde3ea; border-bottom: 1px solid #dde3ea">
+<div style="max-width: 1200px; margin: 0 auto; padding: 64px 24px; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+<div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 32px; line-height: 1.2; font-weight: 800; color: #12354f">Built for regulated work</h2>
+<p style="margin: 0; font-size: 16px; line-height: 1.55; color: #3d4c5c">Borrower data deserves more than a shared inbox.</p>
+</div>
+<div style="flex: 2 1 560px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px 28px">
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="font-size: 16px">Two-step sign-in for every user</b><span style="font-size: 15px; line-height: 1.5; color: #3d4c5c">Staff, contract processors and borrowers.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="font-size: 16px">Approvals before anything goes out</b><span style="font-size: 15px; line-height: 1.5; color: #3d4c5c">Emails, disclosures, orders and lender submissions.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="font-size: 16px">Files stay in your Workspace</b><span style="font-size: 15px; line-height: 1.5; color: #3d4c5c">Company-owned Shared Drives with locked folders.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="font-size: 16px">Full audit log</b><span style="font-size: 15px; line-height: 1.5; color: #3d4c5c">Every change, approval and document version recorded.</span></div>
+</div>
+</div>
+</section>
+
+<section id="demo" style="max-width: 1200px; margin: 0 auto; padding: 72px 24px">
+<div style="background: #12354f; color: #ffffff; border-radius: 20px; padding: 48px 40px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px">
+<div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 34px; line-height: 1.15; font-weight: 800">See your pipeline in GlobalNet LOS</h2>
+<p style="margin: 0; font-size: 17px; color: #d3dee8">A 30-minute walkthrough with your own loan scenarios.</p>
+</div>
+<div style="display: flex; gap: 12px; flex-wrap: wrap">
+<a href="#pricing" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 10px; background: var(--accent); color: #ffffff; font-weight: 700; text-decoration: none">Sign up</a>
+<a href="mailto:[sales email]" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 10px; border: 1px solid #9fb4c8; color: #ffffff; font-weight: 700; text-decoration: none">Book a demo</a>
+</div>
+</div>
+</section>
+
+<footer style="border-top: 1px solid #dde3ea; background: #ffffff">
+<div style="max-width: 1200px; margin: 0 auto; padding: 28px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; font-size: 14px; color: #4b5b6c">
+<span>© 2026 GlobalNet Mortgage, Inc. · NMLS [ID]</span>
+<span style="display: flex; gap: 18px; flex-wrap: wrap"><a href="#privacy">Privacy</a><a href="#terms">Terms</a><a href="#licensing">Licensing</a><a href="#security">Security</a></span>
+</div>
+</footer>
+
+</div>
+<script>
+(function(){var root=document.documentElement,app=(root.dataset.appUrl||'').replace(/\/+$/,''),prev=root.dataset.previewUrl;
+document.querySelectorAll('[data-as]').forEach(function(a){var k=a.getAttribute('data-as');
+a.href='app.html?as='+encodeURIComponent(k);});})();
+(function(){var b=document.getElementById('signin-btn'),m=document.getElementById('signin-menu');
+function set(o){m.hidden=!o;b.setAttribute('aria-expanded',String(o));}
+b.addEventListener('click',function(e){e.stopPropagation();set(m.hidden);if(!m.hidden){var f=m.querySelector('a');if(f)f.focus();}});
+document.addEventListener('click',function(e){if(!m.hidden&&!m.contains(e.target))set(false);});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!m.hidden){set(false);b.focus();}});})();
+</script>
+</body>
+</html>
