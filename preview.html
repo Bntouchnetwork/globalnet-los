@@ -857,6 +857,80 @@ select { text-overflow: ellipsis; }
 .aibar>i{position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,.35)}
 .bad-t{color:#dc2626}
 @media print{.gnai{display:none}}
+
+/* ---------------------------------------------------------------- LendingPad-model P0 (lp.js) */
+.lpb{display:inline-flex;flex-direction:column;align-items:flex-start;gap:0;padding:3px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-weight:600;font-size:.86rem;line-height:1.15;color:var(--ink);font-family:inherit;cursor:default}
+.lpb small{font-weight:500;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.lpb.ok{border-color:color-mix(in srgb,var(--ok) 45%,var(--line));background:var(--ok-soft)}.lpb.warn{border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:var(--warn-soft)}
+.lpb.bad{border-color:color-mix(in srgb,var(--bad) 50%,var(--line));background:var(--bad-soft);color:var(--bad)}.lpb.info{background:var(--info-soft)}
+button.lpb{cursor:pointer}
+.lpkpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+.lpk .k{display:flex;align-items:center;gap:6px}.lpi{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line);font-size:.65rem;font-style:normal;color:var(--muted)}
+.lpk.bad{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}.lpk.bad .v{color:var(--bad)}.lpk.warn .v{color:var(--warn)}
+.lpw .lpwh{gap:8px}.lpw .lpwh h2{margin:0}.btn.icon{min-width:28px;padding:2px 6px}
+.lpw select{padding:2px 6px}.lpbt td{vertical-align:middle}
+.lpbar{display:block;height:5px;border-radius:3px;background:var(--bg);margin-top:3px;overflow:hidden}.lpbar>span{display:block;height:100%;background:var(--accent)}
+.lplo{display:flex;gap:12px;align-items:flex-start}.lplo .tw{flex:1;min-width:0}
+.lparea{width:100%;height:auto;display:block}
+.lpmini{flex:1;text-align:left}.lpmini.bad .v{color:var(--bad)}
+/* pipeline */
+.lpacts{flex-wrap:wrap;gap:8px}
+.lppipe{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.lpbar1{flex-wrap:wrap;gap:10px;align-items:center;padding:10px 12px}
+.lpcards{display:flex;flex-direction:column;gap:10px}
+.lpcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;box-shadow:var(--shadow)}
+.lpc1{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:8px}
+.lpid{font-weight:700;font-size:1rem}
+.lpc2{display:grid;grid-template-columns:1.1fr 1.1fr 1fr 1.6fr auto;gap:10px 14px;align-items:center}
+.lptags,.lpnums{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.lpnums>span:not(.lpb){display:flex;flex-direction:column;font-size:.86rem}.lpnums small{font-size:.68rem;color:var(--muted);text-transform:uppercase}
+.lplo2{display:flex;align-items:center;gap:8px}
+.lpav{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:.78rem}
+.lpfilters{position:sticky;top:12px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 40px);overflow:auto}
+.lpfilters h2{margin:0}.lpf{display:grid;grid-template-columns:1fr;gap:3px}.lpf select,.lpf input{width:100%}
+.lpfclose,.lpftog{display:none}
+body.pipe-mode .lppipe .lpmain{min-width:0}
+/* loan header */
+.lph{position:sticky;top:0;z-index:5;display:flex;flex-direction:column;gap:8px;padding:10px 12px}
+.lph1,.lph2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.lphb{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lph select{max-width:260px}
+.lpdd{position:relative;display:inline-flex}
+.lpddp{position:absolute;top:calc(100% + 4px);left:0;z-index:30;min-width:260px;max-width:min(420px,90vw);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:8px;display:flex;flex-direction:column;gap:6px}
+.lphb .lpdd .lpddp{left:auto;right:0}
+.lpsearch{position:relative;flex:1;min-width:200px;max-width:420px}.lpsearch input{width:100%}
+.lpsr .tbrow{display:flex;justify-content:space-between;gap:8px;text-align:left}
+.lpflash{outline:3px solid var(--accent);outline-offset:3px;border-radius:6px;transition:outline-color .4s}
+.lamenu{position:relative}
+/* overview */
+.lpov{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:12px}
+.lpov .card{margin:0}.lpov h3{margin:0 0 8px}.lpov table{width:100%}.lpov td{padding:3px 4px;font-size:.88rem}.lpov td.num{white-space:nowrap}
+.lpov .fg{grid-template-columns:1fr 1fr}
+.lpmore>summary{cursor:pointer}
+/* notes, audit, docs */
+.lppin{border-left:3px solid var(--accent)}.lpmention{background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:0 3px}
+.lpnote-tools{gap:6px;margin-bottom:6px}
+.lpaudbar{flex-wrap:wrap;gap:8px;align-items:center}.lpaudbar input:not([type]){min-width:200px;flex:1}
+.lpdocm>summary{cursor:pointer}
+/* roles */
+.lproles{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lproles button{display:flex;flex-direction:column;align-items:flex-start;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--ink);font:inherit}
+.lproles button.on{border-color:var(--accent);background:var(--accent-soft)}.lproles small{color:var(--muted)}
+.lppgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:12px}
+.lpperm td{vertical-align:top}.lptog{display:inline-flex;gap:6px;align-items:center;font-size:.85rem}
+.lpcond summary{cursor:pointer;color:var(--accent)}.lpcondb{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow:auto;padding:6px 0}
+.lptourpop{position:fixed;z-index:80;width:280px;background:var(--surface);border:1px solid var(--accent);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.2);padding:10px 12px}
+.lptourpop p{margin:0 0 8px}
+@media (max-width:1200px){.lpc2{grid-template-columns:1fr 1fr}.lpkpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:900px){.lppipe{grid-template-columns:1fr}.lpfilters{display:none;position:fixed;inset:0;z-index:70;max-height:none;border-radius:0}.lpfilters.open{display:flex}.lpfclose,.lpftog{display:inline-flex}
+  .lph{position:static}.lppgrid{grid-template-columns:1fr}}
+@media (max-width:560px){.lpc2{grid-template-columns:1fr}.lpkpis{grid-template-columns:repeat(2,minmax(0,1fr))}.lpov{grid-template-columns:1fr}.lpov .fg{grid-template-columns:1fr}.lph select{max-width:100%;flex:1}.lplo{flex-direction:column}}
+.card.row.lpbar1,.card.row.lpaudbar,.lpdocm .row.lpaudbar{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center}
+.lpbar1 label.row,.lpaudbar label.row{flex-direction:row;align-items:center;gap:6px}
+.lpw .lpwh{flex-wrap:nowrap;align-items:center}.lpw .lpwh h2{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:1rem}.lpw .lpwh>.row{flex-wrap:nowrap;flex-shrink:0}
+.lpov td{white-space:normal}.lpov td.num{white-space:nowrap;padding-left:8px}
+.lpddp{min-width:320px}.lpddp .spread{gap:10px;align-items:center}.lpddp .spread>span:first-child{flex:1}
+.lptogc{width:120px;white-space:nowrap}
+.lppgrid{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
 </style>
 
 <div class="theme-toggle" role="group" aria-label="Color mode">
@@ -7797,6 +7871,803 @@ document.addEventListener('change', (e) => { const d = e.target.dataset || {};
   if (d.aicdays) { S.aicDays = +e.target.value; keepScroll(render); }
   if (d.aicprov) rcDo('ai_admin_save', { p_kind: 'provider', p: { provider: d.aicprov, enabled: e.target.checked } }, 'Provider ' + (e.target.checked ? 'enabled' : 'disabled'), ['aicost:']);
   if (d.aicorg) rcDo('ai_admin_save', { p_kind: 'org_plan', p: { org_id: d.aicorg, plan_code: e.target.value, reason: 'Assigned in AI Cost Management' } }, 'Plan assigned', ['aicost:']); });
+
+// ================================================================ LP core — loan math, TRID / ECOA timing and permission checks (pure functions)
+// Used by the LOS screens and by the unit tests (tests/lpcore.test.mjs). Money is handled in whole cents and rounded
+// half-up at each step, so totals never drift from float error. The database TRID engine (bc_*) stays the authority for
+// compliance deadlines in the live LOS; these functions drive the screens and the dashboard counters.
+const LPCORE = (() => {
+  const cents = (v) => { if (v === null || v === undefined || v === '') return 0; const n = typeof v === 'number' ? v : +String(v).replace(/[$,\s]/g, ''); return isFinite(n) ? Math.round(n * 100 + (n >= 0 ? 1e-7 : -1e-7)) : 0; };
+  const dollars = (c) => c / 100;
+  const round2 = (x) => Math.round((x + (x >= 0 ? 1e-9 : -1e-9)) * 100) / 100;
+  const pct = (num, den) => (den > 0 ? round2(num / den * 100) : null);   // percent with 2 decimals, null when no denominator
+
+  // Monthly principal & interest (fixed rate), in cents. rate = annual %, n = months.
+  function piCents(amount, rate, n, ioMonths = 0) {
+    const P = cents(amount); const r = +rate / 1200; n = +n || 0; if (!P || !n) return 0;
+    if (ioMonths > 0) return Math.round(P * r);
+    if (!r) return Math.round(P / n);
+    return Math.round(P * r / (1 - Math.pow(1 + r, -n)));
+  }
+  // value used for LTV: lesser of sales price and appraised value for a purchase; appraised value otherwise
+  function ltvValue({ purpose, price, appraised }) {
+    const p = cents(price), a = cents(appraised);
+    if (/purchase/i.test(purpose || '') && p > 0 && a > 0) return Math.min(p, a);
+    return a > 0 ? a : p;
+  }
+  function ratios(x) {
+    const v = ltvValue(x); const first = cents(x.amount); const sub = cents(x.subordinate); const helocLimit = cents(x.helocLimit); const helocDrawn = cents(x.helocDrawn);
+    return { value: dollars(v), ltv: pct(first, v), cltv: pct(first + sub + helocDrawn, v), hcltv: pct(first + sub + Math.max(helocLimit, helocDrawn), v) };
+  }
+  // PITI(A): P&I + taxes + insurance + MI + HOA + flood (monthly), in dollars
+  function piti(x) {
+    const pi = piCents(x.amount, x.rate, x.term, x.ioMonths);
+    const parts = { pi, taxes: cents(x.taxes), ins: cents(x.ins), mi: cents(x.mi), hoa: cents(x.hoa), flood: cents(x.flood) };
+    const total = Object.values(parts).reduce((a, b) => a + b, 0);
+    return { ...Object.fromEntries(Object.entries(parts).map(([k, c]) => [k, dollars(c)])), total: dollars(total) };
+  }
+  // DTI: front = housing / income; back = (housing + other monthly debts) / income
+  function dti(x) {
+    const inc = cents(x.income); if (!inc) return { front: null, back: null };
+    const h = cents(piti(x).total); const d = cents(x.debts);
+    return { front: pct(h, inc), back: pct(h + d, inc) };
+  }
+  function dscr(x) { const rent = cents(x.rent); const h = cents(piti(x).total); return rent && h ? Math.round(rent / h * 100) / 100 : null; }
+  // color band for a ratio against configurable limits {warn, bad}
+  const band = (v, lim) => (v === null || v === undefined ? '' : v > lim.bad ? 'bad' : v > lim.warn ? 'warn' : 'ok');
+  const scoreBand = (s, b = { bad: 620, warn: 680, ok: 740 }) => (!s ? '' : s < b.bad ? 'bad' : s < b.warn ? 'warn' : s < b.ok ? 'info' : 'ok');
+
+  // ---------------------------------------------------------------- calendar
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const parse = (s) => { if (s instanceof Date) return new Date(s.getFullYear(), s.getMonth(), s.getDate(), 12); const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || '')); return m ? new Date(+m[1], +m[2] - 1, +m[3], 12) : null; };
+  const nth = (y, m, wd, n) => { const d = new Date(y, m, 1, 12); while (d.getDay() !== wd) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 7 * (n - 1)); return d; };
+  const last = (y, m, wd) => { const d = new Date(y, m + 1, 0, 12); while (d.getDay() !== wd) d.setDate(d.getDate() - 1); return d; };
+  // Legal public holidays (5 U.S.C. 6103(a)). With observed=true a Sunday holiday also closes the Monday after and a Saturday holiday the Friday before.
+  function federalHolidays(year, observed = true) {
+    const fixed = [[0, 1], [5, 19], [6, 4], [10, 11], [11, 25]].map(([m, d]) => new Date(year, m, d, 12));
+    const days = [...fixed, nth(year, 0, 1, 3), nth(year, 1, 1, 3), last(year, 4, 1), nth(year, 8, 1, 1), nth(year, 9, 1, 2), nth(year, 10, 4, 4)];
+    const out = new Set(days.map(ymd));
+    if (observed) for (const d of fixed) { const w = d.getDay(); if (w === 0) out.add(ymd(new Date(year, d.getMonth(), d.getDate() + 1, 12))); if (w === 6) out.add(ymd(new Date(year, d.getMonth(), d.getDate() - 1, 12))); }
+    return [...out].sort();
+  }
+  const holidaySet = (hol) => new Set(hol || [-1, 0, 1, 2].flatMap((k) => federalHolidays(new Date().getFullYear() + k)));
+  // general business day = the office is open (Mon–Fri unless saturdays=true), not a holiday.
+  // specific business day = every day except Sunday and legal public holidays (used for 7-day waiting, CD receipt, rescission).
+  function isBizDay(d, { kind = 'general', saturdays = false, holidays } = {}) {
+    const w = d.getDay(); const H = holidays instanceof Set ? holidays : holidaySet(holidays);
+    if (w === 0 || H.has(ymd(d))) return false; if (w === 6) return kind === 'specific' || saturdays; return true;
+  }
+  function addBizDays(start, n, opts = {}) {
+    const d = parse(start); if (!d) return null; const H = opts.holidays instanceof Set ? opts.holidays : holidaySet(opts.holidays); const o = { ...opts, holidays: H };
+    const step = n >= 0 ? 1 : -1; let k = 0; while (k < Math.abs(n)) { d.setDate(d.getDate() + step); if (isBizDay(d, o)) k++; } return ymd(d);
+  }
+  const addDays = (start, n) => { const d = parse(start); if (!d) return null; d.setDate(d.getDate() + n); return ymd(d); };
+  const daysBetween = (a, b) => { const x = parse(a), y = parse(b); return x && y ? Math.round((y - x) / 864e5) : null; };
+
+  // TRID / ECOA timing. Returns ISO dates (YYYY-MM-DD) or null.
+  function trid(d, opts = {}) {
+    const o = { holidays: opts.holidays, saturdays: !!opts.saturdays };
+    return {
+      leDue: d.application ? addBizDays(d.application, 3, { ...o, kind: 'general' }) : null,                       // §1026.19(e)(1)(iii)(A)
+      leExpires: d.leIssued ? addBizDays(d.leIssued, 10, { ...o, kind: 'general' }) : null,                        // fees good for at least 10 business days
+      earliestClosingFromLE: d.leIssued ? addBizDays(d.leIssued, 7, { ...o, kind: 'specific' }) : null,            // §1026.19(e)(1)(iii)(B) 7-day waiting
+      revisedLEDue: d.coc ? addBizDays(d.coc, 3, { ...o, kind: 'general' }) : null,                                 // §1026.19(e)(4)(i)
+      cdReceiveBy: d.closing ? addBizDays(d.closing, -3, { ...o, kind: 'specific' }) : null,                       // §1026.19(f)(1)(ii)(A)
+      cdMailedReceived: d.cdIssued ? addBizDays(d.cdIssued, 3, { ...o, kind: 'specific' }) : null,                 // mailbox rule when not hand-delivered
+      ecoaDecisionDue: d.application ? addDays(d.application, 30) : null,                                          // Reg B §1002.9(a)(1)
+    };
+  }
+
+  // ---------------------------------------------------------------- permissions
+  // perms: { code: { granted: bool, cond?: { status_in?: [..], own_loans?: bool } } }   ctx: { status, isOwner }
+  function can(perms, code, ctx = {}) {
+    const p = perms && perms[code]; if (!p || !p.granted) return false; const c = p.cond || {};
+    if (Array.isArray(c.status_in) && c.status_in.length && ctx.status !== undefined && !c.status_in.includes(ctx.status)) return false;
+    if (c.own_loans && ctx.isOwner === false) return false;
+    return true;
+  }
+  // field-level change list between two snapshots (leaf paths), skipping protected identifiers
+  const SECRET = /(^|\.)(ssn|itin|dob|birth|taxid|tin|password|secret|token)/i;
+  function diff(a, b, path = '', out = [], max = 300) {
+    if (out.length >= max) return out;
+    const obj = (x) => x !== null && typeof x === 'object';
+    // walk into objects and arrays (also when one side is missing), so nested identifiers are always caught by their path
+    if ((obj(a) || obj(b)) && (obj(a) || a == null) && (obj(b) || b == null) && (!obj(a) || !obj(b) || Array.isArray(a) === Array.isArray(b))) {
+      const A = obj(a) ? a : Array.isArray(b) ? [] : {}; const B = obj(b) ? b : Array.isArray(a) ? [] : {};
+      for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) diff(A[k], B[k], path ? path + '.' + k : k, out, max);
+      return out;
+    }
+    if (JSON.stringify(a) === JSON.stringify(b)) return out;
+    if (SECRET.test(path)) out.push({ path, from: a === undefined ? null : '•••', to: b === undefined ? null : '•••' });
+    else out.push({ path, from: a === undefined ? null : a, to: b === undefined ? null : b });
+    return out;
+  }
+  const CATS = [[/^urla\./, 'Loan Application'], [/^x\.dates\.|^close$|^lockExp$/, 'Loan Dates'], [/^docs\.|^x\.docMeta\./, 'Loan Document'], [/^x\.conditions/, 'Conditions'], [/^x\.lock/, 'Lock'],
+    [/^x\.(le|disclosure|cd)/, 'Disclosure'], [/^x\.needs/, 'Borrower Needs'], [/^x\.notes|^notes/, 'Notes'], [/^tasks/, 'Tasks'], [/^x\.scenarios/, 'Scenario'], [/^milestone$/, 'Status'],
+    [/^x\.(addl|ov|ksp|assign|interviewer)/, 'Additional Data'], [/^x\.rules|^x\.br/, 'Business Rule']];
+  const category = (path) => (CATS.find(([re]) => re.test(path)) || [null, 'Loan'])[1];
+
+  return { cents, dollars, round2, pct, piCents, ltvValue, ratios, piti, dti, dscr, band, scoreBand, federalHolidays, isBizDay, addBizDays, addDays, daysBetween, trid, can, diff, category, ymd, parse };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = LPCORE;
+
+// ================================================================ LendingPad-model P0 — statuses, permissions, dashboard, pipeline, loan header, overview, dates, notes, audit
+// Builds on the existing screens (nothing removed). Loan math and TRID timing come from LPCORE (lpcore.js, unit-tested).
+// Permissions: live → the database (rbac_my_perms / has_perm); preview → the same default matrix kept in the browser.
+
+// ---------------------------------------------------------------- statuses (internal name → display name, category)
+// Internal names stay what the rest of the LOS already uses; the company can rename what users and borrowers see.
+const LP_STATUS_DEF = [
+  ['Lead', 'Lead', 'lead'], ['Prospect', 'Prospect', 'lead'], ['Pre-qualification', 'Pre Qualify', 'lead'], ['Pre-approval', 'Pre Approval', 'lead'],
+  ['Application', 'Application Taken', 'active'], ['Registered', 'Registered', 'active'], ['Broker Initial Submission', 'Broker Initial Submission', 'active'], ['Processing', 'Processing', 'active'],
+  ['Submitted', 'Initial Submission', 'active'], ['Conditional Approval', 'Conditional Approval', 'active'], ['Approved', 'Approved', 'active'], ['Purchase Review', 'Purchase Review', 'active'],
+  ['Suspended', 'Suspended', 'active'], ['Purchase Suspense', 'Purchase Suspense', 'active'], ['Pre-Deny', 'Pre Deny', 'active'], ['Broker Condition Submission', 'Broker Condition Submission', 'active'],
+  ['Condition Submission', 'Condition Submission', 'active'], ['Clear to Close', 'Clear To Close', 'active'], ['Clear To Purchase', 'Clear To Purchase', 'active'], ['Docs Out', 'Docs Out', 'active'],
+  ['Denied', 'Denied', 'adverse'], ['Withdrawn', 'Withdrawn', 'adverse'], ['Not Accepted', 'Not Accepted', 'adverse'], ['Incomplete', 'Incomplete', 'adverse'], ['Rescinded', 'Rescinded', 'adverse'], ['Cancelled', 'Cancelled', 'adverse'],
+  ['Closed', 'Closed', 'completed'], ['Funded', 'Funded', 'completed'], ['Purchased From Seller', 'Purchased From Seller', 'completed'], ['Post Closing', 'Post Closing', 'completed'],
+  ['In Shipping', 'In Shipping', 'completed'], ['Purchased', 'Purchased', 'completed'], ['Servicing', 'Servicing', 'completed'],
+];
+const LP_OFF_BY_DEFAULT = ['Purchase Review', 'Purchase Suspense', 'Clear To Purchase', 'Purchased From Seller', 'In Shipping', 'Purchased', 'Servicing'];   // lender/investor statuses; a broker can turn them on
+function lpStatuses() {
+  const C = S.cfg = S.cfg || {}; const have = new Map((C.lpStatus || []).map((r) => [r.code, r]));
+  C.lpStatus = LP_STATUS_DEF.map(([code, name, cat]) => ({ code, name, consumer: name, cat, on: !LP_OFF_BY_DEFAULT.includes(code), ...(have.get(code) || {}) }));
+  return C.lpStatus;
+}
+const lpSt = (code) => lpStatuses().find((s) => s.code === code) || { code, name: code, consumer: code, cat: 'active', on: true };
+const lpName = (code) => lpSt(code).name || code;
+const lpCat = (code) => lpSt(code).cat;
+const lpPill = (code) => { const c = lpCat(code); return `<span class="pill ${c === 'completed' ? 'ok' : c === 'adverse' ? 'bad' : c === 'lead' ? '' : /Clear|Approv/.test(code) ? 'ok' : /Suspen|Deny/.test(code) ? 'warn' : 'info'}">${esc(lpName(code))}</span>`; };
+function lpApplyStatuses() {   // the status menus everywhere use the company's list
+  const on = lpStatuses().filter((s) => s.on).map((s) => s.code);
+  const used = new Set(S.loans.map((l) => l.milestone)); const list = lpStatuses().filter((s) => s.on || used.has(s.code)).map((s) => s.code);
+  LOAN_STATUS.splice(0, LOAN_STATUS.length, ...list);
+  const notActive = lpStatuses().filter((s) => s.cat !== 'active').map((s) => s.code);
+  NOT_ACTIVE.splice(0, NOT_ACTIVE.length, ...notActive); return on;
+}
+
+// ---------------------------------------------------------------- permissions
+const LP_PERMS = [
+  ['company.view_company_dashboard', 'company', 'View company-wide dashboard'], ['company.manage_company_contacts', 'company', 'Manage company contacts'], ['company.manage_personal_contacts', 'company', 'Manage personal contacts'], ['company.view_integration_info', 'company', 'View integration info'],
+  ['loans.scope_company', 'loans', 'See all company loans'], ['loans.scope_branch', 'loans', 'See all loans of own branch'], ['loans.create', 'loans', 'Create leads / loans'], ['loans.copy', 'loans', 'Copy leads / loans', 1], ['loans.delete', 'loans', 'Delete leads / loans', 1],
+  ['loans.import', 'loans', 'Import loans'], ['loans.export', 'loans', 'Export loans', 1], ['loans.export_partner', 'loans', 'Export to integration partner', 1], ['loans.add_borrowers', 'loans', 'Add borrowers', 1], ['loans.edit_borrowers', 'loans', 'Edit borrowers', 1],
+  ['loans.delete_borrowers', 'loans', 'Delete borrowers', 1], ['loans.edit_summary', 'loans', 'Edit summary (1003 / overview)', 1], ['loans.edit_additional', 'loans', 'Edit additional info', 1], ['loans.edit_critical_dates', 'loans', 'Edit critical dates', 1],
+  ['loans.edit_processing_dates', 'loans', 'Edit processing dates', 1], ['loans.edit_lecd', 'loans', 'Edit LE / CD', 1], ['loans.manage_lecd_additional', 'loans', 'Manage LE / CD additional info', 1], ['loans.manage_lecd_providers', 'loans', 'Manage LE / CD service providers', 1],
+  ['loans.edit_notes', 'loans', 'Edit notes', 1], ['loans.add_conditions', 'loans', 'Add conditions', 1], ['loans.edit_conditions', 'loans', 'Edit conditions', 1], ['loans.delete_conditions', 'loans', 'Delete conditions', 1], ['loans.clear_conditions', 'loans', 'Clear conditions', 1],
+  ['loans.manage_scenarios', 'loans', 'Manage scenarios', 1], ['loans.apply_scenarios', 'loans', 'Apply scenarios', 1], ['loans.assign_lo', 'loans', 'Assign loan officer'], ['loans.assign_la', 'loans', 'Assign loan assistant'], ['loans.assign_processor', 'loans', 'Assign processor'],
+  ['loans.change_branch', 'loans', 'Change branch'], ['loans.delete_documents', 'loans', 'Delete documents', 1], ['loans.finalize_documents', 'loans', 'Finalize documents', 1], ['loans.get_pricing', 'loans', 'Get pricing', 1], ['loans.manage_lock', 'loans', 'Manage lock info', 1],
+  ['loans.manage_actions', 'loans', 'Manage actions (orders to vendors)', 1], ['loans.manage_needs', 'loans', 'Manage borrower needs', 1], ['loans.manage_forms', 'loans', 'Manage forms', 1], ['loans.manage_credit_scores', 'loans', 'Manage credit scores', 1], ['loans.manage_pos_loans', 'loans', 'Manage POS loans'],
+  ['loans.register_with_lender', 'loans', 'Register loan with lender', 1], ['loans.submit_to_uw', 'loans', 'Submit to underwriting', 1], ['loans.change_status', 'loans', 'Change loan status', 1],
+  ['loans.view_assignments', 'loans', 'View assignments'], ['loans.view_audit', 'loans', 'View audit'], ['loans.view_needs', 'loans', 'View borrower needs'], ['loans.view_lock', 'loans', 'View lock'], ['loans.view_conditions', 'loans', 'View conditions'], ['loans.view_documents', 'loans', 'View documents'],
+  ['loans.view_lecd', 'loans', 'View LE / CD'], ['loans.view_notes', 'loans', 'View notes'], ['loans.view_scenarios', 'loans', 'View scenarios'], ['loans.view_with_campaign', 'loans', 'View loans with a campaign'], ['loans.view_without_campaign', 'loans', 'View loans without a campaign'],
+  ['reports.view', 'reports', 'View reports'], ['reports.view_summary', 'reports', 'View summary reports'], ['reports.export', 'reports', 'Export reports'], ['reports.manage', 'reports', 'Manage reports (report builder)'], ['reports.regulatory', 'reports', 'HMDA, NMLS MCR and state reports'],
+  ['settings.general', 'settings', 'General information'], ['settings.users', 'settings', 'Users and licenses'], ['settings.roles', 'settings', 'User roles and permissions'], ['settings.business_rules', 'settings', 'Business rules'], ['settings.compliance', 'settings', 'Compliance settings and calendar'],
+  ['settings.lenders', 'settings', 'Lenders'], ['settings.fees', 'settings', 'Fee and escrow types'], ['settings.forms', 'settings', 'Forms and packages'], ['settings.pipeline', 'settings', 'Pipeline, statuses and views'], ['settings.pos', 'settings', 'POS / borrower portal'],
+  ['settings.security', 'settings', 'Security'], ['settings.subscription', 'settings', 'Subscription'], ['settings.integrations', 'settings', 'Integrations and API keys'], ['settings.notifications', 'settings', 'Notifications'], ['settings.programs', 'settings', 'Programs'],
+  ['settings.uw_conditions', 'settings', 'Underwriting conditions'], ['settings.custom_fields', 'settings', 'Custom fields'],
+].map(([code, grp, label, status_cond], i) => ({ code, grp, label, status_cond: !!status_cond, sort: i }));
+const LP_ROLE_DEF = [['system_administrator', 'System Administrator', 'Everything, including settings, users and roles'], ['branch_manager', 'Branch Manager', 'Loans and reports of the branch'], ['loan_officer', 'Loan Officer', 'Own loans'],
+  ['loan_assistant', 'Loan Assistant', 'Loans of the loan officers they assist'], ['loan_processor', 'Loan Processor', 'Assigned loans: processing, conditions and submission'], ['loan_processor_manager', 'Loan Processor Manager', 'All processing; assigns processors'],
+  ['quality_control', 'Quality Control', 'Read-only review, audit and reports'], ['consumer', 'Consumer', 'Borrower portal access to their own loan']];
+// same matrix as rbac_default_grant() in the database
+function lpDefaultGrant(r, p) {
+  const v = p.startsWith('loans.view_'); const inn = (...xs) => xs.includes(p);
+  if (r === 'system_administrator') return { granted: true };
+  if (r === 'consumer') return { granted: inn('loans.view_needs', 'loans.view_documents', 'loans.view_lecd', 'loans.view_conditions') };
+  if (r === 'quality_control') return { granted: v || inn('loans.scope_company', 'loans.edit_notes', 'loans.export', 'company.view_company_dashboard') || p.startsWith('reports.') };
+  if (r === 'loan_processor' || r === 'loan_processor_manager') return { granted: v || inn('loans.edit_additional', 'loans.edit_critical_dates', 'loans.edit_processing_dates', 'loans.edit_notes', 'loans.add_conditions', 'loans.edit_conditions', 'loans.clear_conditions', 'loans.finalize_documents', 'loans.manage_needs', 'loans.manage_actions', 'loans.manage_forms', 'loans.submit_to_uw', 'loans.register_with_lender', 'loans.edit_borrowers', 'loans.edit_summary', 'loans.change_status', 'loans.manage_lecd_providers', 'reports.view', 'company.manage_personal_contacts')
+    || (r === 'loan_processor_manager' && inn('loans.scope_company', 'loans.assign_processor', 'reports.view_summary', 'reports.export', 'company.view_company_dashboard', 'loans.delete_conditions')) };
+  if (['loan_officer', 'loan_assistant', 'branch_manager'].includes(r)) {
+    if (p === 'loans.delete' && r !== 'branch_manager') return { granted: true, cond: { status_in: ['Lead', 'Prospect', 'Pre-qualification', 'Pre-approval'] } };
+    return { granted: (p.startsWith('loans.') && !inn('loans.scope_company', 'loans.scope_branch', 'loans.change_branch', 'loans.assign_lo', 'loans.delete_documents', 'loans.delete_conditions', 'loans.manage_pos_loans', 'loans.delete')
+      && !(r === 'loan_assistant' && inn('loans.get_pricing', 'loans.manage_lock', 'loans.edit_lecd', 'loans.register_with_lender')))
+      || (r === 'branch_manager' && inn('loans.scope_branch', 'loans.assign_lo', 'loans.change_branch', 'loans.delete', 'loans.delete_documents', 'loans.delete_conditions', 'reports.view_summary', 'company.manage_company_contacts', 'company.view_company_dashboard'))
+      || inn('reports.view', 'reports.export', 'company.manage_personal_contacts') };
+  }
+  return { granted: false };
+}
+function lpRbacLocal() {   // preview: roles kept with the company settings
+  const C = S.cfg = S.cfg || {}; if (!C.rbac) C.rbac = { roles: [] };
+  for (const [code, name, description] of LP_ROLE_DEF) if (!C.rbac.roles.some((r) => r.code === code))
+    C.rbac.roles.push({ id: code, code, name, description, is_system: true, consumer: code === 'consumer', custom_fields: [], doc_types: [], views: [], shortcuts: [], active: true, perms: Object.fromEntries(LP_PERMS.map((p) => [p.code, lpDefaultGrant(code, p.code)])) });
+  if (!C.rbac.members) C.rbac.members = { 'Cristiano Oliveira': ['system_administrator', 'loan_officer'], 'Maria Santos': ['loan_processor'], 'Daniel Reyes': ['loan_processor'], 'Rachel Kim': ['loan_processor_manager'], 'Jordan Ellis': ['quality_control'] };
+  return C.rbac;
+}
+const LP_UIROLE = { admin: 'system_administrator', lo: 'loan_officer', proc: 'loan_processor', platform: 'system_administrator', borrower: 'consumer' };
+function lpPerms() {
+  if (rcLive()) { const d = rcGet('rbac:my', () => rcRpc('rbac_my_perms', { p_org: rcOrg() })); if (d) return d; }
+  const r = lpRbacLocal().roles.find((x) => x.code === LP_UIROLE[role]); return r ? r.perms : {};
+}
+const lpCan = (perm, l) => LPCORE.can(lpPerms(), perm, l ? { status: l.milestone } : {});
+const lpLock = (perm, l) => (lpCan(perm, l) ? '' : 'disabled title="Your role does not allow this"');
+
+// ---------------------------------------------------------------- shared loan figures
+const lpToday = () => (rcLive() ? new Date() : new Date(TODAY));
+const lpTodayISO = () => LPCORE.ymd(lpToday());
+const lpU = (l) => { try { return U.get(l); } catch { return null; } };
+function lpFig(l) {
+  const u = lpU(l); const L = u ? u.l : {}; const b = u ? u.b[0] || {} : {};
+  const amount = +L.loanAmt || l.amount || 0; const price = +L.salesPrice || l.price || 0; const appraised = +L.propValue || l.appraised || 0;
+  const x = { purpose: l.purpose, price, appraised, amount, subordinate: (+L.otherNewMtg || 0) + (+L.ofSubAmt || 0), helocLimit: L.ofHeloc ? +L.ofHelocLimit || 0 : 0,
+    rate: +L.noteRate || l.rate, term: +L.term || l.term || 360, taxes: l.taxes, ins: l.ins, hoa: l.hoa, mi: amount * (+L.pmiRate || 0) / 1200, income: l.income, debts: l.debts, rent: l.rent };
+  const r = LPCORE.ratios(x); const d = LPCORE.dti(x); const p = LPCORE.piti(x);
+  return { ...r, ...d, piti: p, dscr: LPCORE.dscr(x), score: +L.creditScore || +l.creditScore || null, rate: x.rate, amount, price, appraised,
+    email: b.email || '', phone: b.cellPhone || b.homePhone || '', street: L.pTBD ? 'TBD' : L.pStreet || '', city: L.pCity || (l.city || '').split(',')[0], state: L.pState || (l.city || '').split(', ')[1] || '', zip: L.pZip || '', county: L.pCounty || '' };
+}
+function lpLimits() { const C = S.cfg = S.cfg || {}; C.lpLimits = { ltv: { warn: 80, bad: 95 }, cltv: { warn: 85, bad: 97 }, front: { warn: 31, bad: 40 }, back: { warn: 43, bad: 50 }, score: { bad: 620, warn: 680, ok: 740 }, ...(C.lpLimits || {}) }; return C.lpLimits; }
+const lpPct = (v) => (v === null || v === undefined || !isFinite(v) ? '—' : (+v).toFixed(2) + '%');
+const lpBadge = (label, v, lim) => `<span class="lpb ${lim ? LPCORE.band(v, lim) : ''}"><small>${label}</small>${lpPct(v)}</span>`;
+const lpScore = (s) => (s ? `<span class="lpb ${LPCORE.scoreBand(s, lpLimits().score)}"><small>FICO</small>${s}</span>` : '<span class="lpb"><small>FICO</small>—</span>');
+const lpDecided = (l) => !!extras(l).dates.creditDecision || ['Approved', 'Conditional Approval', 'Clear to Close', 'Clear To Purchase', 'Docs Out'].includes(l.milestone) || lpCat(l.milestone) !== 'active' && lpCat(l.milestone) !== 'lead';
+function lpMe() { return rcLive() ? (window.GN_LIVE.user?.name || '') : (ME[role] || [''])[0]; }
+const lpMeShort = () => { const p = lpMe().split(' '); return p.length > 1 ? `${p[0]} ${p.at(-1)[0]}.` : lpMe(); };
+// loans the current user works on (the database already limits what a live user can load)
+function lpScope() {
+  if (role === 'proc') return pipeLoans();
+  if (lpCan('loans.scope_company') || rcLive()) return S.loans;
+  const me = lpMeShort(); return S.loans.filter((l) => !l.lo || l.lo === me);
+}
+function lpTrid(l) { const x = extras(l); const d = x.dates; return LPCORE.trid({ application: d.application, leIssued: x.disclosure.leIssued, closing: d.closing, cdIssued: d.cdIssued }, { saturdays: !!S.cfg?.lpSaturdays }); }
+
+// ---------------------------------------------------------------- change log (preview) and last-modified time (both modes)
+const LP_SNAP = {};
+const lpClone = (l) => { const c = JSON.parse(JSON.stringify(l)); delete c._mod; delete c.events; if (c.x) { delete c.x.fieldLog; } return c; };
+function lpTrack() {
+  const l = S.loanId && S.loans.find((y) => y.id === S.loanId); if (!l) return;
+  const cur = lpClone(l); const prev = LP_SNAP[l.id]; LP_SNAP[l.id] = cur; if (!prev) return;
+  const empty = (v) => v === null || v === undefined || v === '' || (typeof v === 'object' && !Object.keys(v).length);
+  const ch = LPCORE.diff(prev, cur).filter((c) => !/^(ui|tbOpen|_|x\.ui)/.test(c.path) && !(empty(c.from) && empty(c.to)))
+    .map((c) => ({ ...c, from: c.from && typeof c.from === 'object' ? '(section)' : c.from, to: c.to && typeof c.to === 'object' ? (/\.notes\.\d+$/.test(c.path) ? 'note added' : '(section)') : c.to })); if (!ch.length) return;
+  l._mod = new Date().toISOString();
+  if (!rcLive()) { const x = extras(l); x.fieldLog = x.fieldLog || []; x.fieldLog.unshift({ at: l._mod, who: lpMe() || 'User', changes: ch.slice(0, 60).map((c) => ({ ...c, category: LPCORE.category(c.path) })) }); if (x.fieldLog.length > 400) x.fieldLog.length = 400; }
+}
+{ const s1 = save; save = function () { try { lpTrack(); } catch (e) { console.warn('change log', e); } return s1.apply(this, arguments); }; }
+{ const r1 = render; render = function () { try { lpApplyStatuses(); } catch { /* */ } const out = r1.apply(this, arguments); const l = S.loanId && S.loans.find((y) => y.id === S.loanId); if (l && !LP_SNAP[l.id]) LP_SNAP[l.id] = lpClone(l); return out; }; }
+
+function lpCsv(name, rows) {
+  const q = (v) => { const s = v === null || v === undefined ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const blob = new Blob([rows.map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+}
+
+// ---------------------------------------------------------------- Dashboard
+// TRID / ECOA counters (each opens the matching loans) and the LendingPad-style widgets.
+const LP_KPI = {
+  tasks: ['My Tasks', 'Open tasks assigned to you on your loans: overdue / due today / total.'],
+  d3: ['3 Day', 'Loans with an application date and no Loan Estimate issued. The LE is due within 3 business days of the application (Reg. Z §1026.19(e)(1)(iii)).'],
+  d10: ['10 Day', 'Loans with a Loan Estimate issued and no Intent to Proceed. Estimated costs are guaranteed for at least 10 business days after the LE.'],
+  d30: ['30 Day', 'Loans with an application date and no credit decision. ECOA / Reg. B §1002.9 requires notice of action within 30 days of a completed application.'],
+  pcd: ['Prepare CD', 'Approved or clear-to-close loans with a closing date and no Closing Disclosure issued. The borrower must receive the CD 3 business days before closing.'],
+  tcd: ['Track Back CD', 'Closing Disclosure issued and not yet received / signed back by the borrower.'],
+};
+function lpKpiLoans(k) {
+  const T0 = lpTodayISO(); const L = lpScope().filter((l) => !l.deleted);
+  const live = (l) => ['lead', 'active'].includes(lpCat(l.milestone));
+  if (k === 'tasks') { const me = lpMeShort(); const meFull = lpMe(); return L.filter((l) => (l.tasks || []).some((t) => !t.done && (!t.who || t.who === me || t.who === meFull))); }
+  if (k === 'd3') return L.filter((l) => live(l) && extras(l).dates.application && !extras(l).disclosure.leIssued);
+  if (k === 'd10') return L.filter((l) => live(l) && extras(l).disclosure.leIssued && !extras(l).dates.intentToProceed);
+  if (k === 'd30') return L.filter((l) => live(l) && extras(l).dates.application && !lpDecided(l));
+  if (k === 'pcd') return L.filter((l) => ['Approved', 'Conditional Approval', 'Clear to Close', 'Clear To Purchase', 'Docs Out'].includes(l.milestone) && extras(l).dates.closing && !extras(l).dates.cdIssued);
+  if (k === 'tcd') return L.filter((l) => extras(l).dates.cdIssued && !extras(l).dates.cdReceived && !['Closed', 'Funded'].includes(l.milestone) && lpCat(l.milestone) !== 'completed');
+  return [];
+}
+function lpKpiSub(k, xs) {
+  const T0 = lpTodayISO();
+  if (k === 'tasks') { const me = lpMeShort(); const all = xs.flatMap((l) => (l.tasks || []).filter((t) => !t.done && (!t.who || t.who === me || t.who === lpMe())));
+    const dd = (t) => LPCORE.ymd(LPCORE.parse(t.due) || new Date(t.due || '2999-01-01')); const over = all.filter((t) => t.due && dd(t) < T0).length, today = all.filter((t) => t.due && dd(t) === T0).length;
+    return [all.length, `${over} overdue · ${today} due today`, over ? 'bad' : today ? 'warn' : '']; }
+  if (k === 'd3') { const o = xs.filter((l) => lpTrid(l).leDue < T0).length; return [xs.length, o ? `${o} past the LE deadline` : 'LE due in 3 business days', o ? 'bad' : xs.length ? 'warn' : '']; }
+  if (k === 'd10') { const o = xs.filter((l) => lpTrid(l).leExpires < T0).length; return [xs.length, o ? `${o} past 10 business days` : 'waiting for intent to proceed', o ? 'warn' : '']; }
+  if (k === 'd30') { const o = xs.filter((l) => lpTrid(l).ecoaDecisionDue < T0).length; return [xs.length, o ? `${o} past 30 days` : 'credit decision pending', o ? 'bad' : '']; }
+  if (k === 'pcd') { const s = xs.filter((l) => (lpTrid(l).cdReceiveBy || '9') <= LPCORE.addDays(T0, 7)).length; return [xs.length, s ? `${s} must be received within 7 days` : 'no CD issued yet', s ? 'warn' : '']; }
+  return [xs.length, 'waiting for the signed CD', ''];
+}
+function lpWidget(id, title, info, body, opts = {}) {
+  return `<div class="card lpw" data-lpw="${id}"><div class="spread lpwh"><h2>${title}</h2><span class="row" style="gap:4px">${opts.extra || ''}<button class="btn sm icon" data-lpinfo="${esc(info)}" aria-label="About ${title}" title="${esc(info)}">i</button><button class="btn sm icon" data-lpcsv="${id}" aria-label="Download ${title} as CSV" title="Download (CSV)">⇩</button></span></div><div class="lpwb">${body}</div></div>`;
+}
+const lpShort = (v) => (v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : usd(v));
+function lpGroupRows(L, key) { const m = new Map(); for (const l of L) { const k = key(l); const r = m.get(k) || [k, 0, 0]; r[1]++; r[2] += l.amount || 0; m.set(k, r); } return [...m.values()]; }
+function lpBarTable(rows, go) {
+  const max = Math.max(1, ...rows.map((r) => r[1]));
+  return `<div class="tw"><table class="lpbt"><thead><tr><th>Status</th><th class="num">Loans</th><th class="num">Volume</th></tr></thead><tbody>${rows.map(([k, n, v]) => `<tr><td><button class="link" data-lpgo="${esc(go(k))}">${esc(k === '—' ? k : lpName(k))}</button><span class="lpbar"><span style="width:${Math.max(3, n / max * 100)}%"></span></span></td><td class="num">${n}</td><td class="num">${lpShort(v)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No loans.</td></tr>'}</tbody></table></div>`;
+}
+function lpDonut(rows) {
+  const tot = rows.reduce((a, r) => a + r[2], 0) || 1; let a0 = 0; const R = 42, C = 2 * Math.PI * R; const pal = ['var(--accent)', 'var(--brand)', '#c47f17', '#7a5cc2', '#2f8f4e', '#b3261e', '#5b6b7c'];
+  return `<svg viewBox="0 0 110 110" width="110" height="110" role="img" aria-label="Volume by loan officer">${rows.map((r, i) => { const f = r[2] / tot; const s = `<circle r="${R}" cx="55" cy="55" fill="none" stroke="${pal[i % pal.length]}" stroke-width="16" stroke-dasharray="${f * C} ${C}" stroke-dashoffset="${-a0 * C}" transform="rotate(-90 55 55)"></circle>`; a0 += f; return s; }).join('')}</svg>`;
+}
+function lpFunding() {
+  const T = lpToday(); const months = Array.from({ length: 13 }, (_, i) => { const d = new Date(T.getFullYear(), T.getMonth() - 12 + i, 1); return [d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), 0, 0]; });
+  for (const l of lpScope()) { if (!['Funded', 'Post Closing', 'Purchased', 'Servicing', 'In Shipping', 'Purchased From Seller'].includes(l.milestone) && !extras(l).dates.funding) continue;
+    const d = extras(l).dates.funding || LPCORE.ymd(parseD(l.close) || new Date(0)); const m = months.find((x) => d.startsWith(x[0])); if (m) { m[2]++; m[3] += l.amount || 0; } }
+  return months;
+}
+function lpArea(months) {
+  const W = 320, H = 90; const max = Math.max(1, ...months.map((m) => m[3])); const step = W / (months.length - 1);
+  const pts = months.map((m, i) => [i * step, H - (m[3] / max) * (H - 8)]); const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H + 16}" class="lparea" role="img" aria-label="Funded volume, last 13 months"><path d="${line} L ${W} ${H} L 0 ${H} Z" fill="var(--accent-soft)"></path><path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"></path>
+    ${pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="var(--accent)"><title>${months[i][1]}: ${months[i][2]} loans · ${usd(months[i][3])}</title></circle>`).join('')}
+    ${months.map((m, i) => (i % 3 === 0 || i === 12 ? `<text x="${Math.min(W - 14, Math.max(14, i * step))}" y="${H + 13}" font-size="9" text-anchor="middle" fill="var(--muted)">${m[1]}</text>` : '')).join('')}</svg>`;
+}
+function lpLocks() {
+  const T0 = lpTodayISO(); const L = lpScope().filter((l) => ['lead', 'active'].includes(lpCat(l.milestone)));
+  const locked = L.filter((l) => extras(l).lock.status === 'Locked' && (extras(l).dates.lockExpires || '9') >= T0);
+  const expired = L.filter((l) => extras(l).dates.lockExpires && extras(l).dates.lockExpires < T0);
+  return { locked, expired };
+}
+function lpDashData() {
+  const L = lpScope(); const T0 = lpTodayISO();
+  const act = L.filter((l) => ['lead', 'active'].includes(lpCat(l.milestone))); const done = L.filter((l) => ['completed', 'adverse'].includes(lpCat(l.milestone)));
+  const ord = (rows) => rows.sort((a, b) => LP_STATUS_DEF.findIndex((s) => s[0] === a[0]) - LP_STATUS_DEF.findIndex((s) => s[0] === b[0]));
+  const purp = (l) => (/cash/i.test(l.purpose) ? 'Cash Out Refi' : /refi/i.test(l.purpose) ? 'No Cash Out Refi' : /purchase/i.test(l.purpose) ? 'Purchase' : 'Other');
+  const recent = [...L].sort((a, b) => String(b._mod || '').localeCompare(String(a._mod || '')));
+  return { L, T0, act, done, activeRows: ord(lpGroupRows(act, (l) => l.milestone)), doneRows: ord(lpGroupRows(done, (l) => l.milestone)),
+    purpose: ['Purchase', 'No Cash Out Refi', 'Cash Out Refi', 'Other'].map((p) => { const xs = act.filter((l) => purp(l) === p); return [p, xs.length, xs.reduce((a, l) => a + (l.amount || 0), 0)]; }),
+    lo: lpGroupRows(act, (l) => l.lo || 'Unassigned').sort((a, b) => b[2] - a[2]), funding: lpFunding(), locks: lpLocks(), recent };
+}
+function lpDashboard() {
+  const D = lpDashData(); const n = S.lpRecentN || 10; const first = lpMe().split(' ')[0] || 'there';
+  const kpis = Object.keys(LP_KPI).map((k) => { const xs = lpKpiLoans(k); const [cnt, sub, tone] = lpKpiSub(k, xs);
+    return `<button class="card stat kpi lpk ${tone}" data-lpkpi="${k}" title="${esc(LP_KPI[k][1])}"><span class="k">${LP_KPI[k][0]} <i class="lpi" aria-hidden="true">i</i></span><span class="v">${cnt}</span><span class="kpis">${sub}</span></button>`; }).join('');
+  const recent = D.recent.slice(0, n).map((l) => `<tr><td><button class="link" data-open="${l.id}">${esc(l.id)}</button><div class="small muted">${esc(l.borrower)}</div></td><td>${lpPill(l.milestone)}<div class="small muted">${esc(extras(l).addl.channel || 'Broker')} / ${esc(extras(l).addl.campaign || 'Default')}</div></td><td class="small">${esc(l.lenderName || extras(l).addl.lender || '—')}</td><td class="small muted">${l._mod ? new Date(l._mod).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : '—'}</td></tr>`).join('');
+  const { locked, expired } = D.locks;
+  const comp = (typeof compItems === 'function' && role !== 'proc') ? (() => { try { const it = compItems().filter((i) => !i.r.pkg && ['Overdue', 'Escalated', 'Reminder'].includes(i.state)); return it.length ? `<div class="note ${it.some((i) => i.state === 'Overdue') ? 'bad' : 'warn'} spread"><span><b>Compliance:</b> ${it.length} deadline${it.length === 1 ? '' : 's'} need attention — next: ${esc(it[0].r.name)} on ${it[0].l.id}.</span><button class="btn sm" data-go="compliance">Open Compliance</button></div>` : ''; } catch { return ''; } })() : '';
+  return `<div class="top"><div><h1>Welcome, ${esc(first)}</h1><p class="muted">${lpCan('loans.scope_company') ? 'Company-wide' : role === 'proc' ? 'Your processing files' : 'Your loans'} · ${D.L.length} loans · as of ${lpToday().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p></div>
+    <div class="row"><button class="btn sm" data-lptour="1" title="Quick tour">▶ Tour</button><button class="btn sm" data-lprefresh="1" title="Refresh">↻ Refresh</button><label class="ck small"><input type="checkbox" data-lpauto="1" ${S.lpAuto ? 'checked' : ''}> Enable auto refresh</label></div></div>
+  ${comp}
+  <div class="grid kpig lpkpis">${kpis}</div>
+  <div class="grid g2">
+  ${lpWidget('recent', 'Last Modified Loans', 'Loans changed most recently, newest first.', `<div class="tw"><table><thead><tr><th>Loan</th><th>Status · channel / campaign</th><th>Wholesale lender</th><th>Modified</th></tr></thead><tbody>${recent || '<tr><td colspan="4" class="muted">No loans yet.</td></tr>'}</tbody></table></div>`,
+    { extra: `<select data-lprecentn="1" aria-label="How many loans">${[5, 10, 15, 20, 25, 35, 50].map((k) => `<option ${k === n ? 'selected' : ''}>${k}</option>`).join('')}</select>` })}
+  ${lpWidget('active', 'Active Pipeline', 'Leads and loans in process, by status (count and loan amount). Click a status to open those loans.', lpBarTable(D.activeRows, (k) => 'status:' + k))}
+  ${lpWidget('completed', 'Completed Pipeline', 'Funded, closed, withdrawn, denied and other finished loans, by status.', lpBarTable(D.doneRows, (k) => 'status:' + k))}
+  ${lpWidget('purpose', 'Loan Purpose', 'Active loans by purpose.', `<div class="tw"><table><thead><tr><th>Purpose</th><th class="num">Loans</th><th class="num">Volume</th></tr></thead><tbody>${D.purpose.map(([k, c, v]) => `<tr><td><button class="link" data-lpgo="purpose:${esc(k)}">${k}</button></td><td class="num">${c}</td><td class="num">${lpShort(v)}</td></tr>`).join('')}</tbody></table></div>`)}
+  ${lpWidget('lo', 'Loan Officers Production', 'Active loans and volume by loan officer.', `<div class="lplo">${lpDonut(D.lo)}<div class="tw"><table><thead><tr><th>Loan officer</th><th class="num">Loans</th><th class="num">Volume</th></tr></thead><tbody>${D.lo.map(([k, c, v]) => `<tr><td>${esc(k)}</td><td class="num">${c}</td><td class="num">${lpShort(v)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No active loans.</td></tr>'}</tbody></table></div></div>`)}
+  ${lpWidget('funding', 'Funding History', 'Funded loans and volume per month, last 13 months (by funding date).', `${lpArea(D.funding)}<div class="small muted">${D.funding.reduce((a, m) => a + m[2], 0)} loans · ${usd(D.funding.reduce((a, m) => a + m[3], 0))} in 13 months</div>`)}
+  ${lpWidget('locks', 'Lock Expiration', 'Active loans with a rate lock, and locks that expired before closing.', `<div class="row" style="gap:8px"><button class="card stat lpmini" data-lpgo="locked"><span class="k">Locked loans</span><span class="v">${locked.length}</span></button><button class="card stat lpmini ${expired.length ? 'bad' : ''}" data-lpgo="expired"><span class="k">Expired locks</span><span class="v">${expired.length}</span></button></div>
+    <div class="small">${[...locked].sort((a, b) => String(extras(a).dates.lockExpires).localeCompare(String(extras(b).dates.lockExpires))).slice(0, 4).map((l) => `<div class="spread"><button class="link" data-open="${l.id}">${l.id}</button><span class="muted">expires ${fmtD(parseD(extras(l).dates.lockExpires))}</span></div>`).join('')}</div>`)}
+  </div>`;
+}
+{ const prev = V.dashboard; V.dashboard = () => { if (role === 'borrower') return prev();
+  let qc = ''; if (role === 'admin' && typeof qcList === 'function') { const h = prev(); const i = h.indexOf('<div class="card"><div class="spread"><h2>Post-closing QC'); if (i >= 0) qc = h.slice(i); }
+  return lpDashboard().replace(/<\/div>\s*$/, qc + '</div>'); }; }
+function lpWidgetCsv(id) {
+  const D = lpDashData();
+  const t = { recent: [['Loan', 'Borrower', 'Status', 'Channel', 'Campaign', 'Wholesale lender', 'Modified'], ...D.recent.slice(0, S.lpRecentN || 10).map((l) => [l.id, l.borrower, lpName(l.milestone), extras(l).addl.channel || 'Broker', extras(l).addl.campaign || 'Default', l.lenderName || '', l._mod || ''])],
+    active: [['Status', 'Loans', 'Volume'], ...D.activeRows.map(([k, c, v]) => [lpName(k), c, v])], completed: [['Status', 'Loans', 'Volume'], ...D.doneRows.map(([k, c, v]) => [lpName(k), c, v])],
+    purpose: [['Purpose', 'Loans', 'Volume'], ...D.purpose], lo: [['Loan officer', 'Loans', 'Volume'], ...D.lo], funding: [['Month', 'Loans', 'Volume'], ...D.funding.map((m) => [m[0], m[2], m[3]])],
+    locks: [['Loan', 'Borrower', 'Lock status', 'Lock expires'], ...[...D.locks.locked, ...D.locks.expired].map((l) => [l.id, l.borrower, D.locks.expired.includes(l) ? 'Expired' : 'Locked', extras(l).dates.lockExpires])] }[id];
+  if (t) lpCsv(`${id}-${lpTodayISO()}.csv`, t);
+}
+let lpAutoTimer = null;
+function lpAutoRefresh() { clearInterval(lpAutoTimer); lpAutoTimer = null; if (S.lpAuto) lpAutoTimer = setInterval(() => { if (S.view === 'dashboard' && !document.querySelector('#layer .scrim')) keepScroll(render); }, 60000); }
+lpAutoRefresh();
+
+// ---------------------------------------------------------------- Pipeline: saved views, filters with operators, loan cards
+const LP_OPS = { text: [['contains', 'Contains'], ['eq', 'Equals'], ['neq', 'Not equals'], ['starts', 'Starts With'], ['ends', 'Ends With']], num: [['gt', 'Greater Than'], ['lt', 'Less Than'], ['eq', 'Equals']], pick: [['eq', 'Equals'], ['neq', 'Not equals']] };
+const LP_FIELDS = [
+  ['id', 'Loan Number', 'text', (l) => l.id], ['borrower', 'Borrower Name', 'text', (l) => l.borrower], ['status', 'Status', 'pick', (l) => l.milestone, () => lpStatuses().filter((s) => s.on).map((s) => [s.code, s.name])],
+  ['lo', 'Loan Officer', 'pick', (l) => l.lo || '', () => [...new Set(S.loans.map((l) => l.lo).filter(Boolean))].map((x) => [x, x])], ['address', 'Property Address', 'text', (l) => { const f = lpFig(l); return [f.street, f.city, f.state, f.zip].join(' '); }],
+  ['branch', 'Branch', 'pick', (l) => extras(l).addl.branch || (S.cfg?.branches?.[0]?.name || ''), () => (S.cfg?.branches || []).map((b) => [b.name, b.name])], ['campaign', 'Campaign', 'text', (l) => extras(l).addl.campaign || 'Default'],
+  ['program', 'Loan Type', 'pick', (l) => l.program, () => Object.entries(PROGRAM)], ['purpose', 'Purpose Type', 'pick', (l) => (/cash/i.test(l.purpose) ? 'Cash Out Refi' : /refi/i.test(l.purpose) ? 'No Cash Out Refi' : /purchase/i.test(l.purpose) ? 'Purchase' : 'Other'), () => ['Purchase', 'No Cash Out Refi', 'Cash Out Refi', 'Other'].map((x) => [x, x])],
+  ['channel', 'Business Channel', 'pick', (l) => extras(l).addl.channel || 'Broker', () => ['Broker', 'Correspondent', 'Retail'].map((x) => [x, x])], ['pstatus', 'Pipeline Status', 'pick', (l) => lpCat(l.milestone), () => [['lead', 'Lead'], ['active', 'Active'], ['completed', 'Completed'], ['adverse', 'Adverse action']]],
+  ['amount', 'Loan Amount', 'num', (l) => l.amount || 0],
+];
+const LP_VIEWS = [['all', 'Pipeline', {}], ['active', 'Active Pipeline', { pstatus: { op: 'neq', v: 'completed' }, _act: 1 }], ['funded', 'Funded Loans', { status: { op: 'eq', v: 'Funded' } }], ['adverse', 'Adverse Action Loans', { pstatus: { op: 'eq', v: 'adverse' } }], ['locked', 'Locked Loans', { _locked: 1 }]];
+function lpViews() { const C = S.cfg = S.cfg || {}; C.pviews = C.pviews || []; const mine = LP_UIROLE[role]; return [...LP_VIEWS.map(([id, name, f]) => ({ id, name, f, sys: 1 })), ...C.pviews.filter((v) => !v.roles?.length || v.roles.includes(mine))]; }
+function lpMatch(l, F) {
+  if (F._act && !['lead', 'active'].includes(lpCat(l.milestone))) return false;
+  if (F._locked && !(extras(l).lock.status === 'Locked')) return false;
+  if (F._expired && !(extras(l).dates.lockExpires && extras(l).dates.lockExpires < lpTodayISO())) return false;
+  if (F._kpi && !lpKpiLoans(F._kpi).includes(l)) return false;
+  for (const [k, def, type, get] of LP_FIELDS) { const c = F[k]; if (!c || c.v === '' || c.v === undefined) continue; const raw = get(l); const a = String(raw ?? '').toLowerCase(); const v = String(c.v).toLowerCase();
+    const ok = { contains: a.includes(v), eq: type === 'num' ? +raw === +c.v : a === v, neq: a !== v, starts: a.startsWith(v), ends: a.endsWith(v), gt: +raw > +c.v, lt: +raw < +c.v }[c.op || (type === 'text' ? 'contains' : 'eq')]; if (!ok) return false; }
+  return true;
+}
+function lpPipeState() { S.lpPipe = S.lpPipe || { view: 'all', f: {}, sort: 'mod', size: 10, page: 0, sel: [] }; return S.lpPipe; }
+function lpPipeRows() {
+  const P = lpPipeState(); const v = lpViews().find((x) => x.id === P.view) || lpViews()[0]; const F = { ...v.f, ...P.f };
+  const rows = lpScope().filter((l) => lpMatch(l, F));
+  const key = { mod: (l) => l._mod || '', id: (l) => l.id, borrower: (l) => l.borrower, amount: (l) => l.amount || 0, close: (l) => LPCORE.ymd(parseD(l.close) || new Date(8.64e15)), status: (l) => LP_STATUS_DEF.findIndex((s) => s[0] === l.milestone) }[P.sort] || ((l) => l.id);
+  const desc = ['mod', 'amount'].includes(P.sort); rows.sort((a, b) => { const x = key(a), y = key(b); return (x < y ? -1 : x > y ? 1 : 0) * (desc ? -1 : 1); });
+  return { rows, view: v };
+}
+function lpLoanCard(l) {
+  const f = lpFig(l); const lim = lpLimits(); const x = extras(l); const P = lpPipeState(); const ini = (l.lo || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2);
+  const pur = /cash/i.test(l.purpose) ? 'Cash Out Refi' : /refi/i.test(l.purpose) ? 'No Cash Out Refi' : l.purpose || '—';
+  return `<article class="lpcard" aria-label="Loan ${esc(l.id)}">
+    <div class="lpc1"><label class="ck"><input type="checkbox" data-lpsel="${esc(l.id)}" ${P.sel.includes(l.id) ? 'checked' : ''} aria-label="Select ${esc(l.id)}"></label><button class="link lpid" data-open="${esc(l.id)}">${esc(l.id)}</button>${lpPill(l.milestone)}
+      <span class="small muted">Created ${esc(l.createdAt ? fmtD(parseD(String(l.createdAt).slice(0, 10))) : (l.events?.[0]?.at || '—'))}</span><span class="small muted">${esc(x.addl.channel || 'Broker')} / ${esc(x.addl.campaign || 'Default')}</span><span class="small">${esc(l.lenderName || (x.addl.lender && x.addl.lender !== 'To be selected' ? x.addl.lender : 'Lender TBD'))}</span></div>
+    <div class="lpc2"><div><b>${esc(l.borrower)}</b><div class="small muted">${esc(f.email || 'no email')} · ${esc(f.phone || 'no phone')}</div></div>
+      <div class="small">${esc(f.street || 'TBD')}<div class="muted">${esc([f.city, f.state, f.zip].filter(Boolean).join(', '))}${f.county ? ' · ' + esc(f.county) + ' County' : ''}</div></div>
+      <div class="lptags"><span class="pill info">${esc(pur)}</span><span class="pill">${esc(l.occ || '—')}</span><span class="pill">${esc(PROGRAM[l.program] || l.program)}</span>${lpScore(f.score)}</div>
+      <div class="lpnums"><span><small>Amount</small><b>${usd(f.amount)}</b></span><span><small>Note rate</small><b>${f.rate ? (+f.rate).toFixed(3) + '%' : '—'}</b></span>${lpBadge('LTV', f.ltv, lim.ltv)}${lpBadge('CLTV', f.cltv, lim.cltv)}${lpBadge('DTI', f.front, lim.front)}${lpBadge('/', f.back, lim.back)}</div>
+      <div class="lplo2"><span class="lpav" title="${esc(l.lo || '')}">${esc(ini)}</span><span class="small">${esc(l.lo || '—')}</span><button class="btn sm" data-lpnotes="${esc(l.id)}">Notes${(l.notes || []).length + (x.notes || []).length ? ' · ' + ((l.notes || []).length + (x.notes || []).length) : ''}</button></div></div></article>`;
+}
+const lpPrevPipeline = V.pipeline;
+V.pipeline = () => {
+  const old = lpPrevPipeline(); const imp = (old.match(/<label class="btn">Import MISMO[\s\S]*?<\/label>/) || [''])[0]; const del = (old.match(/<details class="card deleted">[\s\S]*<\/details>/) || [''])[0];
+  const P = lpPipeState(); const { rows, view } = lpPipeRows(); const pages = Math.max(1, Math.ceil(rows.length / P.size)); if (P.page >= pages) P.page = 0;
+  const shown = rows.slice(P.page * P.size, P.page * P.size + P.size); const nf = Object.values(P.f).filter((c) => c && c.v !== '' && c.v !== undefined).length;
+  const fld = ([k, label, type, , opts]) => { const c = P.f[k] || {}; return `<div class="lpf"><span class="small"><b>${label}</b></span><select data-lpfop="${k}" aria-label="${label} operator">${LP_OPS[type].map(([o, t]) => `<option value="${o}" ${(c.op || LP_OPS[type][0][0]) === o ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    ${type === 'pick' ? `<select data-lpfv="${k}" aria-label="${label}"><option value="">Any</option>${opts().map(([v, t]) => `<option value="${esc(v)}" ${String(c.v ?? '') === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>` : `<input data-lpfv="${k}" value="${esc(c.v ?? '')}" ${type === 'num' ? 'inputmode="decimal"' : ''} aria-label="${label}">`}</div>`; };
+  const kpiNote = P.f._kpi ? `<div class="note info small spread"><span><b>${LP_KPI[P.f._kpi][0]}:</b> ${esc(LP_KPI[P.f._kpi][1])}</span><button class="btn sm" data-lpclearkpi="1">Show all</button></div>` : P.f._expired ? `<div class="note warn small spread"><span><b>Expired locks</b> — active loans whose rate lock expired.</span><button class="btn sm" data-lpclearkpi="1">Show all</button></div>` : '';
+  return `<div class="top"><div><h1>Pipeline</h1><p class="muted">${rows.length} loan${rows.length === 1 ? '' : 's'} · ${esc(view.name)}</p></div>
+    <div class="row lpacts">${role !== 'proc' && lpCan('loans.create') ? '<button class="btn pri" data-go="newloan">Create</button>' : ''}${lpCan('loans.import') ? imp.replace('Import MISMO 3.4', 'Import (MISMO 3.4)') : ''}
+      <button class="btn" data-lpcopy="1" ${P.sel.length === 1 && lpCan('loans.copy', loan(P.sel[0])) ? '' : 'disabled'} title="Select one loan">Copy</button><button class="btn" data-lpdel="1" ${P.sel.length === 1 && lpCan('loans.delete', loan(P.sel[0])) ? '' : 'disabled'} title="Select one loan your role may delete">Delete</button></div></div>
+  <div class="lppipe"><div class="lpmain">
+    <div class="card row lpbar1"><label class="row small">View<select data-lpview="1">${lpViews().map((v) => `<option value="${esc(v.id)}" ${v.id === P.view ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label><button class="btn sm" data-lpm="1" title="Manual refresh">M</button>
+      <label class="row small">Sort<select data-lpsort="1">${[['mod', 'Last modified'], ['id', 'Loan #'], ['borrower', 'Borrower'], ['amount', 'Amount'], ['close', 'Closing date'], ['status', 'Status']].map(([k, t]) => `<option value="${k}" ${P.sort === k ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label class="row small">Show<select data-lpsize="1">${[10, 20, 50].map((k) => `<option ${k === P.size ? 'selected' : ''}>${k}</option>`).join('')}</select></label>
+      <span class="small muted">${rows.length ? P.page * P.size + 1 : 0}–${Math.min(rows.length, P.page * P.size + P.size)} of ${rows.length}</span><button class="btn sm" data-lppage="-1" ${P.page ? '' : 'disabled'} aria-label="Previous page">‹</button><button class="btn sm" data-lppage="1" ${P.page < pages - 1 ? '' : 'disabled'} aria-label="Next page">›</button>
+      ${lpCan('loans.export') ? '<button class="btn sm" data-lpexport="1">Export</button>' : ''}<button class="btn sm lpftog" data-lpftog="1" aria-expanded="${!!S.lpFOpen}">Filters${nf ? ' · ' + nf : ''}</button></div>
+    ${kpiNote}<div class="lpcards">${shown.map(lpLoanCard).join('') || '<div class="card muted">No loans match.</div>'}</div>${del}</div>
+    <aside class="card lpfilters ${S.lpFOpen ? 'open' : ''}" aria-label="Filters"><div class="spread"><h2>Filters</h2><button class="btn sm lpfclose" data-lpftog="1" aria-label="Close filters">×</button></div>${LP_FIELDS.map(fld).join('')}
+      <div class="row"><button class="btn pri sm" data-lpsearch="1">Search</button><button class="btn sm" data-lpreset="1">Reset Filter</button>${lpCan('settings.pipeline') || role === 'admin' ? '<button class="btn sm" data-lpsaveview="1">Save as view</button>' : ''}</div></aside></div>`;
+};
+function lpReadFilters() { const P = lpPipeState(); for (const [k] of LP_FIELDS) { const op = document.querySelector(`[data-lpfop="${k}"]`)?.value; const v = document.querySelector(`[data-lpfv="${k}"]`)?.value ?? ''; if (v === '') delete P.f[k]; else P.f[k] = { op, v }; } P.page = 0; }
+function lpNotesModal(l) {
+  const x = extras(l); const all = [...(x.notes || []).map((n, i) => ({ ...n, i })), ...(l.notes || []).map((n) => ({ ...n }))].slice(-6).reverse();
+  laModal(`Notes — ${esc(l.id)}`, `<div class="lpnl">${all.map((n) => `<div class="note"><div class="small muted">${esc(n.who || '')} · ${esc(n.at || '')}${n.pin ? ' · 📌' : ''}</div><div>${lpRich(n.body || '')}</div></div>`).join('') || '<p class="muted">No notes yet.</p>'}</div>
+    ${lpCan('loans.edit_notes', l) ? `<label for="lpq-n">Add a note<textarea id="lpq-n" rows="3"></textarea></label>` : ''}`, lpCan('loans.edit_notes', l) ? `<button class="btn pri" data-lpqnote="${esc(l.id)}">Add note</button><button class="btn" data-open="${esc(l.id)}" data-tab="notes" data-laclose="1">Open notes</button>` : '');
+}
+
+// ---------------------------------------------------------------- Loan file header (status, quick switch, badges, search, pricing, actions)
+const lpLaMenu = laMenu; laMenu = () => '';      // the actions menu moves from the 1003 tab to the header
+const LP_PPE = [['globalnet', 'GlobalNet Product & Pricing', 'pricing'], ['optimalblue', 'Optimal Blue', null], ['polly', 'Polly', null], ['loanpass', 'LoanPASS', null]];
+function lpCompliance(l) {
+  const x = extras(l); const d = x.dates; const t = lpTrid(l); const T0 = lpTodayISO(); const out = [];
+  if (d.application) out.push(x.disclosure.leIssued ? ['ok', `Loan Estimate issued ${fmtD(parseD(x.disclosure.leIssued))}`] : [t.leDue < T0 ? 'bad' : 'warn', `Loan Estimate due ${fmtD(parseD(t.leDue))}`]);
+  else out.push(['', 'No application date yet (TRID starts with the 6 pieces of information)']);
+  if (x.disclosure.leIssued && !d.intentToProceed) out.push([t.leExpires < T0 ? 'warn' : '', `Intent to proceed not received · LE costs good until ${fmtD(parseD(t.leExpires))}`]);
+  if (d.application && !lpDecided(l)) out.push([t.ecoaDecisionDue < T0 ? 'bad' : '', `Credit decision due ${fmtD(parseD(t.ecoaDecisionDue))} (ECOA 30 days)`]);
+  if (d.closing) { if (x.disclosure.leIssued && t.earliestClosingFromLE > d.closing) out.push(['bad', `Closing ${fmtD(parseD(d.closing))} is before the 7-day LE waiting period ends (${fmtD(parseD(t.earliestClosingFromLE))})`]);
+    out.push(d.cdIssued ? [LPCORE.addBizDays(d.cdIssued, 3, { kind: 'specific' }) > d.closing && !d.cdReceived ? 'bad' : 'ok', `CD issued ${fmtD(parseD(d.cdIssued))}${d.cdReceived ? ' · received ' + fmtD(parseD(d.cdReceived)) : ''} · must be received by ${fmtD(parseD(t.cdReceiveBy))}`] : [t.cdReceiveBy < LPCORE.addDays(T0, 5) ? 'warn' : '', `CD must be received by ${fmtD(parseD(t.cdReceiveBy))}`]); }
+  if (d.lockExpires && ['lead', 'active'].includes(lpCat(l.milestone))) { const days = LPCORE.daysBetween(T0, d.lockExpires); out.push([days < 0 ? 'bad' : days <= 7 ? 'warn' : 'ok', days < 0 ? `Lock expired ${fmtD(parseD(d.lockExpires))}` : `Lock expires ${fmtD(parseD(d.lockExpires))} (${days} days)`]); }
+  return out;
+}
+function lpHeader(l) {
+  const f = lpFig(l); const lim = lpLimits(); const C = lpCompliance(l); const worst = C.some((c) => c[0] === 'bad') ? 'bad' : C.some((c) => c[0] === 'warn') ? 'warn' : 'ok';
+  const statuses = lpStatuses().filter((s) => s.on || s.code === l.milestone); const canSt = lpCan('loans.change_status', l);
+  const pur = /cash/i.test(l.purpose) ? 'Cash Out Refi' : /refi/i.test(l.purpose) ? 'No Cash Out Refi' : l.purpose || '—';
+  const dtiBad = (f.back !== null && f.back > lim.back.bad) || (f.front !== null && f.front > lim.front.bad);
+  const others = lpScope().filter((x) => x.id !== l.id).slice(0, 200);
+  return `<div class="lph card"><div class="lph1"><button class="link small" data-go="pipeline">‹ Pipeline</button>
+      <select data-lpstatus="1" aria-label="Loan status" ${canSt ? '' : 'disabled title="Your role cannot change the status"'}>${statuses.map((s) => `<option value="${esc(s.code)}" ${s.code === l.milestone ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>
+      <select data-lpswitch="1" aria-label="Switch loan"><option value="${esc(l.id)}">#${esc(l.id)} / ${esc(l.borrower)}</option>${others.map((o) => `<option value="${esc(o.id)}">#${esc(o.id)} / ${esc(o.borrower)}</option>`).join('')}</select>
+      <span class="lphb"><span class="pill info">${esc(pur)}</span><span class="pill">${esc(l.occ || '—')}</span><span class="lpb"><small>Amount</small>${usd(f.amount)}</span>${lpBadge('LTV', f.ltv, lim.ltv)}${lpScore(f.score)}<span class="lpb"><small>Rate</small>${f.rate ? (+f.rate).toFixed(3) + '%' : '—'}</span>
+      <span class="lpb ${dtiBad ? 'bad' : LPCORE.band(f.back, lim.back)}"><small>DTI</small>${lpPct(f.front)} / ${lpPct(f.back)}</span>
+      <span class="lpdd"><button class="lpb ${worst}" data-lpdd="comp" aria-expanded="${S.lpDD === 'comp'}"><small>Compliance</small>${worst === 'ok' ? 'OK' : worst === 'bad' ? 'Action' : 'Check'} ▾</button>${S.lpDD === 'comp' ? `<div class="lpddp" role="dialog" aria-label="Compliance results">${C.map(([s, t]) => `<div class="spread small"><span>${esc(t)}</span><span class="pill ${s}">${s === 'bad' ? 'fail' : s === 'warn' ? 'due' : s === 'ok' ? 'pass' : 'info'}</span></div>`).join('')}${typeof T.trid === 'function' ? '<button class="link small" data-lgo="trid">Compliance testing details</button>' : ''}</div>` : ''}</span></span></div>
+    <div class="lph2"><span class="lpsearch"><input id="lp-q" placeholder="Search this loan (field, section)…" value="${esc(S.lpQ || '')}" aria-label="Search fields in this loan" autocomplete="off">${S.lpQ ? lpSearchResults(l, S.lpQ) : ''}</span>
+      <span class="lpdd"><button class="btn sm" data-lpdd="price" ${lpLock('loans.get_pricing', l)}>$ Get Price ▾</button>${S.lpDD === 'price' ? `<div class="lpddp">${LP_PPE.map(([k, n, tab]) => `<button class="tbrow" data-lpppe="${k}">${esc(n)}${tab ? '' : ' <span class="muted small">· not connected</span>'}</button>`).join('')}</div>` : ''}</span>
+      ${lpLaMenu()}<button class="btn sm" data-lpback="1" title="Back">↩</button>${l.lenderName ? `<span class="pill info">Lender: ${esc(l.lenderName)}</span>` : ''}</div></div>`;
+}
+// search: labels and section titles of every loan tab, rendered off-screen once per change
+const LP_SEARCH_TABS = ['overview', 'application', 'additional', 'dates', 'needs', 'disclosure', 'scenario', 'uw', 'lock', 'forms', 'tasks', 'notes'];
+let lpIdx = { key: '', items: [] };
+function lpIndex(l) {
+  const key = l.id + '|' + (l._mod || '') + '|' + S.tab; if (lpIdx.key === key) return lpIdx.items; const items = []; const keepTab = S.tab;
+  for (const t of LP_SEARCH_TABS) { if (typeof T[t] !== 'function') continue; let h = ''; try { S.tab = t; h = T[t](l); } catch { continue; } finally { S.tab = keepTab; }
+    const name = (LOAN_MENU.find(([k]) => k === t) || [t, t])[1]; const seen = new Set();
+    for (const m of h.matchAll(/<(label|h2|h3|td class="wrap-cell")[^>]*>([^<]{2,80})/g)) { const txt = m[2].replace(/\s+/g, ' ').trim(); if (!txt || seen.has(txt)) continue; seen.add(txt); items.push({ tab: t, tabName: name, text: txt, kind: m[1] === 'label' ? 'field' : 'section' }); } }
+  lpIdx = { key, items }; return items;
+}
+function lpSearchResults(l, q) {
+  const s = q.toLowerCase(); const hits = lpIndex(l).filter((i) => i.text.toLowerCase().includes(s) || i.tabName.toLowerCase().includes(s)).slice(0, 12);
+  return `<div class="lpddp lpsr" role="listbox">${hits.map((h, i) => `<button class="tbrow" role="option" data-lpjump="${esc(h.tab)}|${esc(h.text)}"><span>${esc(h.text)}</span><small class="muted">${esc(h.tabName)} · ${h.kind}</small></button>`).join('') || '<p class="muted small" style="padding:6px">No field matches.</p>'}</div>`;
+}
+function lpJump(tab, text) {
+  S.view = 'loan'; S.tab = tab; S.lpQ = ''; render();
+  setTimeout(() => { const el = [...document.querySelectorAll('#app label, #app h2, #app h3, #app td.wrap-cell')].find((x) => x.textContent.replace(/\s+/g, ' ').trim().startsWith(text)); if (!el) return; el.scrollIntoView({ block: 'center' }); el.classList.add('lpflash'); const inp = el.querySelector('input,select,textarea'); if (inp) inp.focus({ preventScroll: true }); setTimeout(() => el.classList.remove('lpflash'), 2200); }, 30);
+}
+{ const vl = V.loan; V.loan = () => { if (role === 'borrower') return vl(); const l = loan(S.loanId); if (!l) return vl(); extras(l);
+  if (!LOAN_MENU.some(([k]) => k === S.tab) && !(S.tab === 'trid' && typeof T.trid === 'function') && !T[S.tab]) S.tab = 'overview';
+  if (S.tab === 'audit' && !lpCan('loans.view_audit', l)) return lpHeader(l) + '<div class="card"><p class="muted">Your role cannot view the audit of this loan.</p></div>';
+  const h = vl(); const i = h.indexOf('</div>', h.indexOf('<div class="top">')); const rest = h.startsWith('<div class="top">') ? h.replace(/^<div class="top">[\s\S]*?<\/div>\s*(<span class="pill info">Lender:[^<]*<\/span>)?<\/div>/, '') : h;
+  return lpHeader(l) + rest; }; }
+
+// ---------------------------------------------------------------- Overview: LendingPad cards
+const LP_KSP = ['Appraiser', 'Closing Agent', 'Hazard Insurance', 'Settlement Agent', 'Title Company', 'Surveyor', 'Buyer\'s Attorney', 'Seller\'s Attorney', 'Buyer\'s Agent', 'Seller\'s Agent'];
+function lpOvCards(l) {
+  const x = extras(l); const u = lpU(l); const L = u ? u.l : {}; const f = lpFig(l); const ed = lpCan('loans.edit_summary', l) ? '' : 'disabled';
+  x.interviewer = x.interviewer || {}; x.ksp = x.ksp || {}; x.assign = x.assign || {}; x.cf = x.cf || {}; const I = x.interviewer;
+  const k = typeof liCalc === 'function' && u ? (() => { try { return liCalc(l, u); } catch { return null; } })() : null;
+  const row = (a, b) => `<tr><td>${a}</td><td class="num">${b}</td></tr>`;
+  const mlo = typeof mloOf === 'function' ? (() => { try { return mloOf(l) || {}; } catch { return {}; } })() : {};
+  const lenderRec = (S.cfg?.lenders || []).find((y) => y.name === l.lenderName); const ae = lenderRec?.contacts?.[0];
+  const cfs = (typeof gtRows === 'function' ? (() => { try { return gtRows('cfields'); } catch { return []; } })() : []).filter((c) => c.where === 'Overview' || c.where === 'Additional data');
+  const inp = (path, label, val, type = 'text', perm = 'loans.edit_summary') => `<label>${label}<input ${type === 'date' ? 'type="date"' : ''} data-x="${path}" value="${esc(val ?? '')}" ${lpCan(perm, l) ? '' : 'disabled'}></label>`;
+  const sel = (path, label, val, opts, perm = 'loans.edit_summary') => `<label>${label}<select data-x="${path}" ${lpCan(perm, l) ? '' : 'disabled'}><option value=""></option>${opts.map((o) => `<option ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+  const team = ['Cristiano O.', 'Maria Santos', 'Daniel Reyes', 'Rachel Kim'];
+  return `<div class="lpov">
+  <div class="card"><h3>Assignments</h3><div class="fg">${sel('assign.lo', 'Loan Officer', x.assign.lo || l.lo, [...new Set([l.lo, ...team].filter(Boolean))], 'loans.assign_lo')}${sel('assign.la', 'Loan Assistant', x.assign.la, team, 'loans.assign_la')}${sel('assign.proc', 'Processor', x.assign.proc || (l.assignment?.who || ''), [...team, 'Virtual Processor'], 'loans.assign_processor')}${sel('addl.branch', 'Branch', x.addl.branch, (S.cfg?.branches || []).map((b) => b.name), 'loans.change_branch')}</div></div>
+  <div class="card"><h3>Borrowers</h3>${(u?.b || []).map((b, i) => `<div class="spread"><span><b>${esc(`${b.first || ''} ${b.last || ''}`.trim() || 'Borrower ' + (i + 1))}</b> <span class="pill">${i ? 'Co-borrower' : 'Borrower'}</span>${b.jointWith !== undefined ? ' <span class="pill info">joint credit</span>' : ''}</span><span class="small muted">${esc(b.email || '')}</span></div>`).join('') || '<p class="muted">No borrowers yet.</p>'}<button class="link small" data-lgo="application">Open the 1003</button></div>
+  <div class="card"><h3>Dates</h3><table><tbody>${[['Application', x.dates.application], ['LE issued', x.disclosure.leIssued], ['Intent to proceed', x.dates.intentToProceed], ['Lock expires', x.dates.lockExpires], ['Est. closing', x.dates.closing], ['Funding', x.dates.funding]].map(([a, b]) => row(a, b ? fmtD(parseD(b)) : '—')).join('')}</tbody></table><button class="link small" data-lgo="dates">All loan dates</button></div>
+  ${k ? `<div class="card"><h3>Details of Transaction</h3><table><tbody>${[['a. Sales contract price', L.salesPrice], ['b. Improvements, renovations, repairs', L.improvements], ['c. Land (if acquired separately)', L.land], ['d. Refinance: balance of mortgage loans to be paid off', L.refiPayoff], ['e. Credit cards and other debts paid off', L.otherPayoff], ['f. Borrower closing costs (incl. prepaids)', L.closingCosts], ['g. Discount points', L.points]].map(([a, b]) => row(a, usd(+b || 0, 2))).join('')}
+    ${row('<b>H. Total due from borrower</b>', '<b>' + usd(k.costs, 2) + '</b>')}${row('I. Loan amount (incl. financed MI/FF)', usd(k.totalLA, 2))}${row('J. Other new mortgage loans', usd(+L.otherNewMtg || 0, 2))}${row('K. Seller credits and other credits', usd((+L.sellerCredits || 0) + (+L.otherCredits || 0), 2))}${row('<b>Cash from / to borrower</b>', '<b>' + usd(k.cash, 2) + '</b>')}</tbody></table></div>` : ''}
+  <div class="card"><h3>Interviewer Details</h3><div class="fg">${sel('interviewer.method', 'Application taken by', I.method, ['Face-to-face', 'Telephone', 'Fax or mail', 'Email or internet'])}${inp('interviewer.takenOn', 'Application date taken', I.takenOn || x.dates.application, 'date')}${inp('dates.closing', 'Estimated closing', x.dates.closing, 'date', 'loans.edit_critical_dates')}
+    ${inp('interviewer.vesting', 'Vesting (title will be held in)', I.vesting)}${sel('interviewer.manner', 'Manner held', I.manner, ['Sole ownership', 'Joint tenancy with right of survivorship', 'Tenants in common', 'Tenancy by the entirety', 'Life estate', 'Other'])}${sel('interviewer.estate', 'Estate held in', I.estate, ['Fee simple', 'Leasehold'])}</div></div>
+  <div class="card"><h3>Key Service Providers</h3><div class="tw"><table><tbody>${LP_KSP.map((r) => { const v = x.ksp[r] || {}; return `<tr><td class="small">${esc(r)}</td><td><input data-x="ksp.${r}.company" value="${esc(v.company || (r === 'Title Company' ? x.addl.titleCo || '' : ''))}" placeholder="Company" aria-label="${esc(r)} company" ${lpCan('loans.manage_lecd_providers', l) ? '' : 'disabled'} list="lp-contacts"></td><td><input data-x="ksp.${r}.contact" value="${esc(v.contact || '')}" placeholder="Contact · phone" aria-label="${esc(r)} contact" ${lpCan('loans.manage_lecd_providers', l) ? '' : 'disabled'}></td></tr>`; }).join('')}</tbody></table></div>
+    <datalist id="lp-contacts">${(S.contacts || S.crm?.contacts || []).slice(0, 200).map((c) => `<option value="${esc(c.company || c.name || '')}">`).join('')}</datalist></div>
+  <div class="card"><h3>Loan Originator Information</h3><table><tbody>${row('Company', esc(S.cfg?.company?.name || 'GlobalNet Mortgage, Inc.'))}${row('Company NMLS', esc(S.cfg?.company?.nmls || '2544747'))}${row('Address', esc(S.cfg?.company?.address || ''))}${row('Loan officer', esc(mlo.name || l.lo || '—'))}${row('LO NMLS', esc(mlo.nmls || '—'))}${row('State license', esc((mlo.licenses || []).find?.((y) => (y.state || y[0]) === f.state)?.number || mlo.license || '—'))}</tbody></table></div>
+  <div class="card"><h3>Other Finance</h3><table><tbody>${row('New subordinate financing', usd((+L.otherNewMtg || 0) + (+L.ofSubAmt || 0), 2))}${row('HELOC', L.ofHeloc ? 'Yes · limit ' + usd(+L.ofHelocLimit || 0) : 'No')}${row('CLTV / HCLTV', `${lpPct(f.cltv)} / ${lpPct(f.hcltv)}`)}</tbody></table><button class="link small" data-lgo="application">Edit in the 1003</button></div>
+  <div class="card"><h3>Subject Property</h3><p>${esc(f.street || 'TBD')}<br><span class="muted">${esc([f.city, f.state, f.zip].filter(Boolean).join(', '))}${f.county ? ' · ' + esc(f.county) + ' County' : ''}</span></p>
+    <table><tbody>${row('Property type', esc(L.propType || '—'))}${row('Units', esc(L.units || '1'))}${row('Year built', esc(x.addl.yearBuilt || L.yearBuilt || '—'))}${row('Value', usd(f.appraised || f.price))}${row('First-time homebuyer', L.fthb ? 'Yes' : '—')}</tbody></table>
+    <div class="row"><button class="btn sm" data-lpavm="1" ${lpLock('loans.manage_actions', l)}>AVM Check</button><button class="link small" data-lgo="application">Edit property</button></div></div>
+  <div class="card"><h3>Proposed Housing Expense</h3><table><tbody>${row('Principal & interest', usd(f.piti.pi, 2))}${row('Homeowner\'s insurance', usd(f.piti.ins, 2))}${row('Property taxes', usd(f.piti.taxes, 2))}${row('Mortgage insurance', usd(f.piti.mi, 2))}${row('HOA dues', usd(f.piti.hoa, 2))}${row('<b>Total</b>', '<b>' + usd(f.piti.total, 2) + '</b>')}</tbody></table></div>
+  <div class="card"><h3>Terms and Mortgage</h3><table><tbody>${row('Loan amount', usd(f.amount))}${row('Note rate', f.rate ? (+f.rate).toFixed(3) + '%' : '—')}${row('Term', (+L.term || l.term || 360) + ' months')}${row('Loan type', esc(PROGRAM[l.program] || l.program))}${row('Purpose', esc(l.purpose || '—'))}${row('LTV / CLTV', `${lpPct(f.ltv)} / ${lpPct(f.cltv)}`)}${row('DTI front / back', `${lpPct(f.front)} / ${lpPct(f.back)}`)}${f.dscr ? row('DSCR', f.dscr.toFixed(2)) : ''}</tbody></table></div>
+  <div class="card"><h3>Wholesale Lender Information</h3><table><tbody>${row('Lender', esc(l.lenderName || x.addl.lender || 'To be selected'))}${row('Lender loan #', esc(x.addl.lenderLoanNo || '—'))}${row('Account executive', esc(ae ? ae.name || '' : '—'))}${row('AE email / phone', esc(ae ? [ae.email, ae.phone].filter(Boolean).join(' · ') : '—'))}</tbody></table></div>
+  ${cfs.length ? `<div class="card"><h3>Custom Fields</h3><div class="fg">${cfs.map((c) => `<label>${esc(c.name)}${c.type === 'Yes / No' ? `<select data-x="cf.${esc(c.name)}" ${ed}><option></option><option ${x.cf[c.name] === 'Yes' ? 'selected' : ''}>Yes</option><option ${x.cf[c.name] === 'No' ? 'selected' : ''}>No</option></select>` : `<input data-x="cf.${esc(c.name)}" ${c.type === 'Date' ? 'type="date"' : c.type === 'Number' ? 'inputmode="decimal"' : ''} value="${esc(x.cf[c.name] || '')}" ${ed}>`}</label>`).join('')}</div></div>` : ''}
+  </div>`;
+}
+{ const ov = T.overview; T.overview = (l) => { if (role === 'borrower') return ov(l); return lpOvCards(l) + `<details class="card lpmore"><summary><b>Loan team, screening and payment</b></summary>${ov(l)}</details>`; }; }
+// xset needs the containers to exist before writing a nested path
+{ const xs = xset; xset = function (l, path, v) { const ks = path.split('.'); let o = extras(l); for (let i = 0; i < ks.length - 1; i++) { if (o[ks[i]] === undefined || o[ks[i]] === null || typeof o[ks[i]] !== 'object') o[ks[i]] = {}; o = o[ks[i]]; } return xs(l, path, v); }; }
+
+// ---------------------------------------------------------------- Loan Dates: critical and processing dates
+const LP_CRIT = [['prospect', 'Prospect'], ['prequal', 'Pre-Qualify'], ['preapproval', 'Pre-Approval'], ['application', 'Application Taken', 'TRID trigger — the 6 pieces of information'], ['leIssued', 'Loan Estimate issued'], ['intentToProceed', 'Intent to proceed'],
+  ['lockDate', 'Locked'], ['lockExpires', 'Lock expired / expires'], ['processing', 'Processing'], ['registered', 'Registered'], ['initialSubmission', 'Initial Submission'], ['creditDecision', 'Credit decision', 'ECOA notice within 30 days of a complete application'],
+  ['approved', 'Approved'], ['conditionSubmission', 'Condition Submission'], ['appraisalOrdered', 'Appraisal ordered'], ['appraisalReceived', 'Appraisal received', 'Copy to the borrower ≥ 3 business days before closing'], ['contingency', 'Financing contingency'],
+  ['ctc', 'Clear To Close'], ['cdIssued', 'Closing Disclosure issued'], ['cdReceived', 'Closing Disclosure received / signed'], ['closing', 'Closing (consummation)'], ['funding', 'Funded'], ['denied', 'Denied'], ['withdrawn', 'Withdrawn']];
+const LP_PROC = [['earliestFee', 'Earliest Fee Collection'], ['sspl', 'SSPL Sent'], ['safeHarbor', 'Safe Harbor (anti-steering) disclosed'], ['fundsReceived', 'Funds Received'], ['processingFee', 'Processing Fee paid'], ['salesContract', 'Sales Contract received'],
+  ['aba', 'Affiliated Business Arrangement'], ['charm', 'CHARM Booklet'], ['helocBrochure', 'HELOC Brochure'], ['avmProvided', 'AVM Provided'], ['homeCounseling', 'Home Counseling Disclosure'], ['toolkit', 'Your Home Loan Toolkit (Special Info Booklet)'],
+  ['eConsent', 'E-Sign consent'], ['appraisalDelivered', 'Appraisal delivered to borrower'], ['paidToProcessor', 'Paid to Processor']];
+{ const td = T.dates; T.dates = (l) => {
+  const x = extras(l); x.pdates = x.pdates || {}; const d = x.dates; const t = lpTrid(l); const T0 = lpTodayISO();
+  const ec = lpCan('loans.edit_critical_dates', l), ep = lpCan('loans.edit_processing_dates', l);
+  const path = (k) => (k === 'leIssued' ? 'disclosure.leIssued' : 'dates.' + k); const val = (k) => (k === 'leIssued' ? x.disclosure.leIssued : d[k]) || '';
+  const due = { leIssued: t.leDue && !x.disclosure.leIssued ? ['LE due', t.leDue] : null, creditDecision: d.application && !lpDecided(l) ? ['due', t.ecoaDecisionDue] : null, cdReceived: d.closing && !d.cdReceived ? ['by', t.cdReceiveBy] : null, earliestFee: d.intentToProceed ? ['from', d.intentToProceed] : null };
+  const flag = (k) => { const q = due[k]; if (!q || !q[1]) return ''; const late = q[0] !== 'from' && q[1] < T0; return `<span class="pill ${late ? 'bad' : 'warn'}">${q[0]} ${fmtD(parseD(q[1]))}</span>`; };
+  const table = (rows, getV, getP, can) => `<div class="tw"><table><tbody>${rows.map(([k, label, hint]) => `<tr><td class="wrap-cell">${label}${hint ? `<div class="muted small">${hint}</div>` : ''}</td><td><input type="date" data-x="${getP(k)}" value="${esc(getV(k))}" aria-label="${label}" ${can ? '' : 'disabled'}></td><td>${flag(k)}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="grid g2 lpdates"><div class="card"><div class="spread"><h2>Critical Dates</h2>${ec ? '' : '<span class="pill">read only</span>'}</div>${table(LP_CRIT, val, path, ec)}</div>
+    <div><div class="card"><div class="spread"><h2>Processing Dates</h2>${ep ? '' : '<span class="pill">read only</span>'}</div>${table(LP_PROC, (k) => x.pdates[k] || (k === 'earliestFee' ? d.intentToProceed || '' : ''), (k) => 'pdates.' + k, ep)}</div>
+    <div class="card"><h2>TRID and ECOA timing</h2><table><tbody>${[['Loan Estimate due', t.leDue], ['LE costs good until (10 business days)', t.leExpires], ['Earliest closing after the LE (7 business days)', t.earliestClosingFromLE], ['Credit decision due (ECOA 30 days)', t.ecoaDecisionDue], ['CD must be received by', t.cdReceiveBy], ['CD received if mailed (3 business days)', t.cdMailedReceived]].map(([a, b]) => `<tr><td>${a}</td><td class="num">${b ? fmtD(parseD(b)) : '—'}</td></tr>`).join('')}</tbody></table>
+    <p class="muted small">Business days follow the federal holiday calendar (Saturdays count for the 7-day and CD timing, not for the 3-day LE). Every change is written to the loan's audit trail.${rcLive() ? ' The compliance engine in the database keeps the official deadlines and alerts.' : ''}</p></div></div></div>`; }; }
+
+// ---------------------------------------------------------------- Notes: formatting, @mentions, pinning
+function lpRich(s) {   // safe subset: **bold**, _italic_, "- " bullets, @Name
+  return esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/(^|\s)_([^_]+)_/g, '$1<i>$2</i>').replace(/@([A-Z][\w.]*(?: [A-Z][\w.]*)?)/g, '<span class="lpmention">@$1</span>')
+    .split('\n').map((ln) => (/^- /.test(ln) ? '<li>' + ln.slice(2) + '</li>' : ln + '<br>')).join('').replace(/(<li>[\s\S]*?<\/li>)(?!<li>)/g, '<ul>$1</ul>');
+}
+const lpPeople = () => [...new Set(['Cristiano Oliveira', 'Maria Santos', 'Daniel Reyes', 'Rachel Kim', 'Jordan Ellis', ...S.loans.map((l) => l.lo).filter(Boolean)])];
+T.notes = (l) => {
+  const x = extras(l); x.notes = x.notes || []; const can = lpCan('loans.edit_notes', l);
+  const all = [...x.notes.map((n, i) => ({ ...n, i })), ...(l.notes || []).map((n) => ({ ...n, legacy: 1 }))].sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0));
+  return `<div class="card"><div class="spread"><h2>Notes</h2><span class="muted small">Newest first · pinned on top</span></div>
+  ${can ? `<div class="lpnote-tools row"><button class="btn sm" data-lpfmt="**" title="Bold"><b>B</b></button><button class="btn sm" data-lpfmt="_" title="Italic"><i>I</i></button><button class="btn sm" data-lpfmt="- " title="List">•</button>
+    <select data-lpmention="1" aria-label="Mention someone"><option value="">@ Mention…</option>${lpPeople().map((p) => `<option>${esc(p)}</option>`).join('')}</select></div>
+  <textarea id="nt-b" rows="4" placeholder="Add a note — **bold**, _italic_, - list, @Name to notify"></textarea>
+  <div class="row"><select id="nt-v"><option value="internal">Internal</option><option value="borrower">Visible to borrower</option></select><label class="ck small"><input type="checkbox" id="nt-pin"> Pin</label><button class="btn sm pri" data-lpaddnote="1">Add note</button></div>` : '<p class="muted small">Your role can read notes but not add them.</p>'}
+  ${all.reverse().sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0)).map((n) => `<div class="note ${n.pin ? 'lppin' : ''}"><div class="spread"><span class="small muted">${n.pin ? '📌 ' : ''}${esc(n.who || '')} · ${esc(n.at || '')}${n.vis === 'borrower' ? ' · <span class="pill info">borrower</span>' : ''}</span>${!n.legacy && can ? `<button class="btn sm" data-lppin="${n.i}">${n.pin ? 'Unpin' : 'Pin'}</button>` : ''}</div><div>${lpRich(n.body || '')}</div></div>`).join('')}</div>`;
+};
+{ const tn = tbNotes; tbNotes = function () { const n = tn(); const me = lpMe(); (S.lpMentions || []).filter((m) => m.to === me && !m.read).forEach((m) => n.push(['loan:' + m.loan, `${m.by} mentioned you on ${m.loan}`])); return n; }; }
+
+// ---------------------------------------------------------------- Audit: filterable timeline
+const LP_RANGES = [['', 'All time'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['month', 'This month'], ['lastmonth', 'Last month']];
+const LP_CATS = ['Loan Application', 'Loan Dates', 'Loan Document', 'Status', 'Conditions', 'Disclosure', 'Lock', 'Borrower Needs', 'Notes', 'Tasks', 'Scenario', 'Additional Data', 'Business Rule', 'Approvals', 'Loan Processor', 'Submission', 'Loan'];
+function lpRange(r) {
+  const T0 = new Date(); const d = (y, m, dd) => new Date(y, m, dd); const y = T0.getFullYear(), m = T0.getMonth(), dd = T0.getDate();
+  return { today: [d(y, m, dd), null], yesterday: [d(y, m, dd - 1), d(y, m, dd)], 7: [d(y, m, dd - 7), null], 30: [d(y, m, dd - 30), null], month: [d(y, m, 1), null], lastmonth: [d(y, m - 1, 1), d(y, m, 1)] }[r] || [null, null];
+}
+function lpAuditLocal(l) {
+  const x = extras(l); const out = [];
+  for (const e of x.fieldLog || []) for (const c of e.changes) out.push({ at: e.at, who: e.who, category: c.category, message: 'Changed ' + c.path, path: c.path, from: c.from, to: c.to });
+  for (const e of l.events || []) out.push({ at: e.at, who: e.who, category: 'Loan Processor', message: e.s + (e.note ? ' — ' + e.note : '') });
+  for (const a of S.approvals.filter((y) => y.loan === l.id)) for (const [e, w, t] of a.history) out.push({ at: t, who: w, category: 'Approvals', message: `${a.title}: ${e}` });
+  for (const s of l.submissions || []) out.push({ at: s.at, who: '', category: 'Submission', message: `Submission v${s.v} built` });
+  return out;
+}
+const lpAt = (s) => { const d = new Date(s); if (!isNaN(d)) return d; const p = parseD(s); return p || new Date(0); };
+T.audit = (l) => {
+  const A = S.lpAud = S.lpAud || { q: '', cat: '', range: '', from: '', to: '' };
+  let rows; let note = '';
+  if (rcLive() && l.dbId) {
+    const [f0, t0] = A.range ? lpRange(A.range) : [A.from ? new Date(A.from + 'T00:00') : null, A.to ? new Date(A.to + 'T23:59:59') : null];
+    const key = `audit:${l.dbId}:${A.q}:${A.cat}:${A.range}:${A.from}:${A.to}`; rows = rcGet(key, () => rcRpc('loan_audit', { p_loan: l.dbId, p_from: f0 ? f0.toISOString() : null, p_to: t0 ? t0.toISOString() : null, p_category: A.cat || null, p_q: A.q || null, p_limit: 1000 }));
+    if (rows === undefined) return lpAuditBar(A) + `<div class="card">${rcLoading(key)}</div>`; if (rows === null) return lpAuditBar(A) + `<div class="card">${rcLoading(key)}</div>`;
+    note = 'Kept in the database — entries cannot be edited or deleted. SSN, ITIN and date-of-birth changes are recorded without the values.';
+  } else {
+    const [f0, t0] = A.range ? lpRange(A.range) : [A.from ? new Date(A.from + 'T00:00') : null, A.to ? new Date(A.to + 'T23:59:59') : null]; const q = A.q.toLowerCase();
+    rows = lpAuditLocal(l).filter((r) => (!A.cat || r.category === A.cat) && (!q || [r.message, JSON.stringify(r.from ?? ''), JSON.stringify(r.to ?? ''), r.who].join(' ').toLowerCase().includes(q))
+      && (!f0 || lpAt(r.at) >= f0) && (!t0 || lpAt(r.at) < t0)).sort((a, b) => lpAt(b.at) - lpAt(a.at));
+    note = 'Preview: changes are recorded in this browser. In the live LOS every field change is recorded in the database and cannot be edited.';
+  }
+  const v = (x) => (x === null || x === undefined || x === '' ? '<span class="muted">empty</span>' : esc(typeof x === 'object' ? JSON.stringify(x) : String(x)));
+  return lpAuditBar(A) + `<div class="card"><div class="spread"><h2>Audit</h2><span class="small muted">${rows.length} entr${rows.length === 1 ? 'y' : 'ies'} <button class="btn sm" data-lpauditcsv="1">⇩ CSV</button></span></div><p class="muted small">${note}</p>
+  <div class="tw"><table><thead><tr><th>When</th><th>Who</th><th>Category</th><th>What</th><th>Old → New</th></tr></thead><tbody>${rows.slice(0, 500).map((r) => `<tr><td class="small">${esc(isNaN(new Date(r.at)) ? r.at : new Date(r.at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }))}</td><td class="small">${esc(r.who || '—')}</td><td><span class="pill">${esc(r.category || '')}</span></td><td class="wrap-cell small">${esc(r.message || '')}</td><td class="wrap-cell small">${r.path ? `${v(r.from)} → <b>${v(r.to)}</b>` : ''}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No entries match.</td></tr>'}</tbody></table></div></div>`;
+};
+function lpAuditBar(A) {
+  return `<div class="card row lpaudbar"><input data-lpaud="q" value="${esc(A.q)}" placeholder="Search message or value" aria-label="Search the audit"><select data-lpaud="cat" aria-label="Type"><option value="">All types</option>${LP_CATS.map((c) => `<option ${A.cat === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+    <select data-lpaud="range" aria-label="Predefined ranges">${LP_RANGES.map(([k, t]) => `<option value="${k}" ${A.range === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    <label class="row small">From<input type="date" data-lpaud="from" value="${esc(A.from)}" ${A.range ? 'disabled' : ''}></label><label class="row small">To<input type="date" data-lpaud="to" value="${esc(A.to)}" ${A.range ? 'disabled' : ''}></label><button class="btn sm" data-lpaudreset="1">Reset</button></div>`;
+}
+
+// ---------------------------------------------------------------- Documents: manager view (types, statuses, finalize, borrower visibility, rename / move)
+{ const tdoc = T.documents; T.documents = (l) => { const base = tdoc(l); if (role === 'borrower') return base;
+  const x = extras(l); x.docMeta = x.docMeta || {}; const F = S.lpDocF = S.lpDocF || { type: '', st: '', q: '' };
+  const all = Object.entries(l.docs || {}).filter(([, d]) => d); const types = [...new Set(all.map(([, d]) => d.f).filter(Boolean))].sort();
+  const rows = all.filter(([k, d]) => (!F.type || d.f === F.type) && (!F.st || (F.st === 'final' ? x.docMeta[k]?.final : !x.docMeta[k]?.final)) && (!F.q || String(d.t).toLowerCase().includes(F.q.toLowerCase())));
+  const canF = lpCan('loans.finalize_documents', l), canP = lpCan('loans.manage_needs', l), canE = lpCan('loans.edit_summary', l);
+  return `<details class="card lpdocm" ${S.lpDocOpen ? 'open' : ''}><summary><b>Document Manager</b> <span class="muted small">· ${all.length} documents · ${all.filter(([k]) => x.docMeta[k]?.final).length} finalized</span></summary>
+    <div class="row lpaudbar"><input data-lpdocf="q" value="${esc(F.q)}" placeholder="Search documents" aria-label="Search documents"><select data-lpdocf="type" aria-label="Types"><option value="">All types</option>${types.map((t) => `<option ${F.type === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+      <select data-lpdocf="st" aria-label="Statuses"><option value="">All statuses</option><option value="open" ${F.st === 'open' ? 'selected' : ''}>Unfinalized</option><option value="final" ${F.st === 'final' ? 'selected' : ''}>Finalized</option></select></div>
+    <div class="tw"><table><thead><tr><th>Document</th><th>Type</th><th>Review</th><th>Finalized</th><th>Borrower portal</th><th>Operations</th></tr></thead><tbody>${rows.map(([k, d]) => { const m = x.docMeta[k] || {}; return `<tr><td class="wrap-cell"><b>${esc(d.t)}</b>${m.renamedFrom ? `<div class="small muted">was ${esc(m.renamedFrom)}</div>` : ''}</td><td>${esc(d.f || '—')}</td><td>${esc(d.st || 'received')}</td>
+      <td>${m.final ? `<span class="pill ok">🔒 ${esc(m.finalAt || '')}</span>` : '<span class="pill">open</span>'}</td><td><label class="ck small"><input type="checkbox" data-lpdocportal="${esc(k)}" ${m.portal ? 'checked' : ''} ${canP ? '' : 'disabled'}> visible</label></td>
+      <td><div class="row"><button class="btn sm" data-lpdocfinal="${esc(k)}" ${canF ? '' : 'disabled'}>${m.final ? 'Reopen' : 'Finalize'}</button><button class="btn sm" data-lpdocren="${esc(k)}" ${canE && !m.final ? '' : 'disabled'}>Rename</button>
+        <select data-lpdocmove="${esc(k)}" aria-label="Move to folder" ${canE && !m.final ? '' : 'disabled'}><option value="">Move…</option>${(typeof FOLDERS !== 'undefined' ? FOLDERS : types).filter((f) => f !== d.f).map((f) => `<option>${esc(f)}</option>`).join('')}</select></div></td></tr>`; }).join('') || '<tr><td colspan="6" class="muted">No documents match.</td></tr>'}</tbody></table></div>
+    <p class="muted small">Finalized documents are locked: they can't be renamed or moved until reopened. Splitting and merging PDF pages arrives with the document service (P1).</p></details>` + base; }; }
+
+// ---------------------------------------------------------------- Settings: User Roles, Statuses, Ratio colors, Views
+{ const u = SET_NAV.find((n) => n[0] === 'users'); if (u) { u[1] = 'Users'; u[3] = [['users', 'Users & invitations'], ['roles', 'User Roles']]; }
+  const p = SET_NAV.find((n) => n[0] === 'pcols'); if (p && p[3]) { if (!p[3].some(([k]) => k === 'pviews')) p[3].push(['pviews', 'Views']); if (!p[3].some(([k]) => k === 'plimits')) p[3].push(['plimits', 'Ratio colors']); } }
+function lpRolesData() {
+  if (rcLive()) { const d = rcGet('rbac:admin', () => rcRpc('rbac_admin', { p_org: rcOrg() })); return d; }
+  const R = lpRbacLocal(); return { catalog: LP_PERMS, roles: R.roles.map((r) => ({ ...r, members: Object.values(R.members).filter((xs) => xs.includes(r.code)).length })), members: Object.entries(R.members).map(([name, codes]) => ({ user_id: name, name, org_role_id: codes[0], codes })) };
+}
+function lpRolesHTML() {
+  if (!lpCan('settings.roles') && role !== 'admin') return '<div class="card"><h2>User Roles</h2><p class="muted">Only a System Administrator can manage roles.</p></div>';
+  const D = lpRolesData(); if (D === undefined) return `<div class="card">${rcLoading('rbac:admin')}</div>`; if (D === null) return `<div class="card">${rcLoading('rbac:admin')}</div>`;
+  const roles = D.roles || []; const cur = roles.find((r) => r.id === S.lpRole) || roles[0]; if (!cur) return '<div class="card"><p class="muted">No roles.</p></div>'; S.lpRole = cur.id;
+  const tab = S.lpRoleTab || 'perms'; const statuses = lpStatuses().filter((s) => s.on);
+  const grp = (g, title) => { const ps = (D.catalog || []).filter((p) => p.grp === g);
+    return `<div class="card lpperm"><div class="spread"><h3>${title}</h3><span class="row"><button class="btn sm" data-lpgrant="${g}|1">Grant All</button><button class="btn sm" data-lpgrant="${g}|0">Revoke All</button></span></div><div class="tw"><table><tbody>${ps.map((p) => { const v = cur.perms?.[p.code] || {}; const st = v.cond?.status_in || [];
+      return `<tr><td>${esc(p.label)}<div class="small muted"><code>${esc(p.code)}</code></div>${p.status_cond && v.granted ? `<details class="lpcond"><summary class="small">Condition: ${st.length ? 'Status equals ' + st.map((s) => esc(lpName(s))).join(' or ') : 'any status'}</summary><div class="lpcondb">${statuses.map((s) => `<label class="ck small"><input type="checkbox" data-lpcond="${esc(p.code)}|${esc(s.code)}" ${st.includes(s.code) ? 'checked' : ''}> ${esc(s.name)}</label>`).join('')}<p class="small muted">No status ticked = any status.</p></div></details>` : ''}</td>
+        <td class="lptogc"><label class="lptog"><input type="checkbox" data-lpperm="${esc(p.code)}" ${v.granted ? 'checked' : ''}><span>${v.granted ? 'Granted' : 'Not granted'}</span></label></td></tr>`; }).join('')}</tbody></table></div></div>`; };
+  const listField = (k, label, opts) => `<div class="card"><h3>${label}</h3><div class="row" style="flex-wrap:wrap;gap:8px">${opts.map((o) => `<label class="ck small"><input type="checkbox" data-lprolelist="${k}|${esc(o)}" ${(cur[k] || []).includes(o) ? 'checked' : ''}> ${esc(o)}</label>`).join('') || '<span class="muted small">Nothing configured yet.</span>'}</div><p class="small muted">Nothing ticked = all.</p></div>`;
+  const cfs = (() => { try { return gtRows('cfields').map((c) => c.name); } catch { return []; } })(); const dts = (() => { try { return gtRows('doctypes').map((c) => c.type || c.name || Object.values(c)[0]); } catch { return []; } })();
+  let body = '';
+  if (tab === 'general') body = `<div class="card"><div class="fg"><label>Role name<input id="lpr-name" value="${esc(cur.name)}" ${cur.is_system ? 'disabled' : ''}></label><label style="grid-column:span 2">Description<input id="lpr-desc" value="${esc(cur.description || '')}"></label></div>
+    <div class="row"><button class="btn sm pri" data-lprolesave="1">Save</button>${cur.is_system ? '<span class="small muted">Standard role — the name stays; permissions can change.</span>' : ''}</div></div>`;
+  else if (tab === 'cf') body = listField('custom_fields', 'Custom fields this role sees', cfs);
+  else if (tab === 'dt') body = listField('doc_types', 'Loan document types this role sees', dts);
+  else if (tab === 'views') body = listField('views', 'Pipeline views this role can use', lpViews().map((v) => v.name));
+  else if (tab === 'shortcuts') body = listField('shortcuts', 'Loan menu shortcuts', LOAN_MENU.map(([, t]) => t));
+  else if (tab === 'members') body = `<div class="card"><h3>People with this role</h3><div class="tw"><table><tbody>${(D.members || []).map((m) => `<tr><td>${esc(m.name || m.user_id)}</td><td><select data-lpassign="${esc(m.user_id)}" aria-label="Role of ${esc(m.name || '')}">${roles.filter((r) => !r.consumer).map((r) => `<option value="${esc(r.id)}" ${(m.codes ? m.codes[0] === r.code : m.org_role_id === r.id) ? 'selected' : ''}>${esc(r.name)}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div></div>`;
+  else body = `<div class="lppgrid">${grp('company', 'Company')}${grp('loans', 'Loans')}${grp('reports', 'Reports')}${grp('settings', 'Settings')}</div>`;
+  return `<div class="card"><div class="spread"><div><h2>User Roles</h2><p class="muted small">What each role can do. Conditions limit a permission to loans in the chosen statuses. ${rcLive() ? 'Saved in the database; every change is in the audit log.' : 'Preview — kept in this browser.'}</p></div>
+    <span class="row"><input id="lpr-new" placeholder="New role name" aria-label="New role name"><select id="lpr-copy" aria-label="Copy permissions from">${roles.map((r) => `<option value="${esc(r.id)}">copy ${esc(r.name)}</option>`).join('')}</select><button class="btn sm" data-lproleadd="1">Add role</button></span></div>
+    <div class="lproles">${roles.map((r) => `<button class="${r.id === cur.id ? 'on' : ''}" data-lprole="${esc(r.id)}"><b>${esc(r.name)}</b><small>${r.members || 0} member${r.members === 1 ? '' : 's'}${r.is_system ? '' : ' · custom'}</small></button>`).join('')}</div></div>
+  <nav class="tabs" role="tablist">${[['general', 'General Information'], ['perms', 'Permissions'], ['cf', 'Custom Fields'], ['dt', 'Loan Document Types'], ['views', 'Views'], ['shortcuts', 'Shortcuts'], ['members', 'Members']].map(([k, t]) => `<button role="tab" class="${tab === k ? 'on' : ''}" data-lproletab="${k}">${t}</button>`).join('')}</nav>${body}`;
+}
+function lpStatusHTML() {
+  const ed = role === 'admin' || lpCan('settings.pipeline');
+  return `<div class="card"><h2>Statuses</h2><p class="muted small">Internal name stays fixed (reports, compliance and integrations use it). Change the name your team sees and the name borrowers see in the portal. Turned-off statuses disappear from status menus.</p>
+    <div class="tw"><table><thead><tr><th>Internal name</th><th>Displayed name</th><th>Borrower sees</th><th>Group</th><th>Used</th></tr></thead><tbody>${lpStatuses().map((s, i) => `<tr><td><code>${esc(s.code)}</code></td><td><input data-lpst="${i}|name" value="${esc(s.name)}" ${ed ? '' : 'disabled'} aria-label="Displayed name for ${esc(s.code)}"></td><td><input data-lpst="${i}|consumer" value="${esc(s.consumer)}" ${ed ? '' : 'disabled'} aria-label="Borrower name for ${esc(s.code)}"></td>
+      <td><select data-lpst="${i}|cat" ${ed ? '' : 'disabled'} aria-label="Group">${[['lead', 'Lead'], ['active', 'Active'], ['completed', 'Completed'], ['adverse', 'Adverse action']].map(([k, t]) => `<option value="${k}" ${s.cat === k ? 'selected' : ''}>${t}</option>`).join('')}</select></td><td><input type="checkbox" data-lpst="${i}|on" ${s.on ? 'checked' : ''} ${ed ? '' : 'disabled'} aria-label="Used"></td></tr>`).join('')}</tbody></table></div>
+    <div class="row"><button class="btn sm" data-lpstreset="1" ${ed ? '' : 'disabled'}>Reset to Default</button></div></div>`;
+}
+function lpLimitsHTML() {
+  const L = lpLimits(); const ed = role === 'admin' || lpCan('settings.pipeline');
+  const r = (k, label, keys) => `<tr><td>${label}</td>${keys.map((q) => `<td><input data-lplim="${k}|${q}" value="${L[k][q]}" inputmode="decimal" style="width:80px" ${ed ? '' : 'disabled'} aria-label="${label} ${q}"></td>`).join('')}</tr>`;
+  return `<div class="card"><h2>Ratio colors</h2><p class="muted small">Colors on the pipeline cards and the loan header. Above "warn" turns orange, above "bad" turns red. Screening only — lender guidelines and AUS findings decide.</p>
+    <table><thead><tr><th>Ratio</th><th>Warn above</th><th>Bad above</th></tr></thead><tbody>${r('ltv', 'LTV %', ['warn', 'bad'])}${r('cltv', 'CLTV %', ['warn', 'bad'])}${r('front', 'DTI front %', ['warn', 'bad'])}${r('back', 'DTI back %', ['warn', 'bad'])}</tbody></table>
+    <h3>Credit score bands</h3><table><thead><tr><th></th><th>Red below</th><th>Orange below</th><th>Blue below (green above)</th></tr></thead><tbody><tr><td>FICO</td>${['bad', 'warn', 'ok'].map((q) => `<td><input data-lplim="score|${q}" value="${L.score[q]}" inputmode="numeric" style="width:80px" ${ed ? '' : 'disabled'} aria-label="Score ${q}"></td>`).join('')}</tr></tbody></table>
+    <label class="ck small"><input type="checkbox" data-lpsat="1" ${S.cfg?.lpSaturdays ? 'checked' : ''} ${ed ? '' : 'disabled'}> Our office is open on Saturdays (counts for the 3-day LE)</label></div>`;
+}
+function lpViewsHTML() {
+  const C = S.cfg; C.pviews = C.pviews || []; const roles = lpRbacLocal().roles;
+  return `<div class="card"><h2>Pipeline views</h2><p class="muted small">Standard views: ${LP_VIEWS.map((v) => esc(v[1])).join(', ')}. Save your own from the Pipeline filter panel (Save as view); choose which roles can use each.</p>
+    <div class="tw"><table><thead><tr><th>View</th><th>Filters</th><th>Roles</th><th></th></tr></thead><tbody>${C.pviews.map((v, i) => `<tr><td><input data-lpvname="${i}" value="${esc(v.name)}" aria-label="View name"></td><td class="small">${Object.entries(v.f).map(([k, c]) => `${esc((LP_FIELDS.find((f) => f[0] === k) || [k, k])[1])} ${esc(c.op)} ${esc(c.v)}`).join(' · ') || '—'}</td>
+      <td class="small">${roles.filter((r) => !r.consumer).map((r) => `<label class="ck"><input type="checkbox" data-lpvrole="${i}|${r.code}" ${(v.roles || []).includes(r.code) ? 'checked' : ''}> ${esc(r.name)}</label>`).join(' ')}</td><td><button class="btn sm" data-lpvdel="${i}" aria-label="Remove view ${esc(v.name)}">×</button></td></tr>`).join('') || '<tr><td colspan="4" class="muted">No saved views yet.</td></tr>'}</tbody></table></div><p class="muted small">No role ticked = everyone.</p></div>`;
+}
+{ const vs = V.settings; V.settings = () => { const t = curTab('settings', 'company'); const H = { roles: lpRolesHTML, pstatus: lpStatusHTML, plimits: lpLimitsHTML, pviews: lpViewsHTML }[t]; if (!H) return vs(); ensureData();
+  return `<div class="top"><div><h1>Settings</h1><p class="muted">Company setup${role === 'admin' ? '' : ' · read only'}</p></div></div><div class="setgrid">${setNavHTML(t)}<div class="setmain">${H()}</div></div>`; }; }
+
+// ---------------------------------------------------------------- avatar menu: switch role, reset and reload
+{ const tb = tbHTML; tbHTML = function () { let h = tb(); if (S.tbOpen !== 'me') return h;
+  const opts = rcLive() ? (window.GN_LIVE.uiRoles || []) : ['admin', 'lo', 'proc']; const LBL = { admin: 'System Administrator', lo: 'Loan Officer', proc: 'Loan Processor', platform: 'Platform owner' };
+  const add = (opts.length > 1 ? `<div class="small muted" style="padding:6px 8px 0">Switch current user role</div>${opts.map((r) => `<button class="tbrow" data-lpswrole="${r}">${r === role ? '● ' : ''}${LBL[r] || r}</button>`).join('')}` : '') + '<button class="tbrow" data-lpreload="1">Reset and Reload</button>';
+  return h.replace(/(<div class="tbpop" role="dialog" aria-label="Account">[\s\S]*?<\/span>)/, `$1${add}`); }; }
+
+// ---------------------------------------------------------------- events
+const lpRe = () => keepScroll(render);
+async function lpRbacWrite(fn, args, ok) { const r = await rcDo(fn, args, ok, ['rbac:']); return r; }
+function lpRoleCur() { const D = lpRolesData(); return D && (D.roles || []).find((r) => r.id === S.lpRole); }
+function lpSetPerms(changes) {   // [{perm, granted, cond}]
+  const cur = lpRoleCur(); if (!cur) return;
+  if (rcLive()) return lpRbacWrite('rbac_set_perms', { p_role: cur.id, p_perms: changes }, 'Permissions saved');
+  if (cur.code === 'system_administrator' && changes.some((c) => ['settings.roles', 'settings.users'].includes(c.perm) && !c.granted)) return toast('The System Administrator role always keeps users and roles.');
+  const R = lpRbacLocal().roles.find((r) => r.id === cur.id); for (const c of changes) R.perms[c.perm] = { granted: !!c.granted, ...(c.cond && Object.keys(c.cond).length ? { cond: c.cond } : {}) }; save(); lpRe(); toast('Permissions saved');
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-lpkpi],[data-lpgo],[data-lpinfo],[data-lpcsv],[data-lprefresh],[data-lptour],[data-lpcopy],[data-lpdel],[data-lpm],[data-lppage],[data-lpexport],[data-lpftog],[data-lpsearch],[data-lpreset],[data-lpsaveview],[data-lpnotes],[data-lpqnote],[data-lpclearkpi],[data-lpdd],[data-lpppe],[data-lpjump],[data-lpback],[data-lpavm],[data-lpfmt],[data-lpaddnote],[data-lppin],[data-lpauditcsv],[data-lpaudreset],[data-lpdocfinal],[data-lpdocren],[data-lprole],[data-lproletab],[data-lpgrant],[data-lprolesave],[data-lproleadd],[data-lpstreset],[data-lpvdel],[data-lpswrole],[data-lpreload]');
+  if (!b) { if (S.lpDD && !e.target.closest('.lpdd')) { S.lpDD = null; lpRe(); } if (S.lpQ && !e.target.closest('.lpsearch')) { S.lpQ = ''; lpRe(); } return; }
+  const d = b.dataset; const P = lpPipeState(); const l = S.loanId ? loan(S.loanId) : null;
+  if (d.lpkpi) { P.f = { _kpi: d.lpkpi }; P.view = 'all'; P.page = 0; S.view = 'pipeline'; render(); return window.scrollTo(0, 0); }
+  if (d.lpgo) { const [k, v] = d.lpgo.split(':'); P.view = 'all'; P.page = 0; P.f = k === 'status' ? { status: { op: 'eq', v } } : k === 'purpose' ? { purpose: { op: 'eq', v }, _act: 1 } : k === 'locked' ? { _locked: 1, _act: 1 } : k === 'expired' ? { _expired: 1, _act: 1 } : {}; S.view = 'pipeline'; render(); return window.scrollTo(0, 0); }
+  if (d.lpinfo) return toast(d.lpinfo);
+  if (d.lpcsv) return lpWidgetCsv(d.lpcsv);
+  if (d.lprefresh) { if (rcLive()) { toast('Refreshing from the database…'); return window.GN_LIVE.flush().then(() => location.reload()); } RC.cache = {}; lpRe(); return toast('Dashboard refreshed'); }
+  if (d.lptour) { S.lpTour = 0; return lpTourStep(); }
+  if (d.lpclearkpi) { P.f = {}; P.page = 0; return lpRe(); }
+  if (d.lpcopy) { const x = loan(P.sel[0]); if (!x) return; S.loanId = x.id; S.view = 'loan'; S.tab = 'overview'; render(); setTimeout(() => document.querySelector('[data-laact="copy"]')?.click(), 30); return; }
+  if (d.lpdel) { const x = loan(P.sel[0]); if (!x) return; if (!lpCan('loans.delete', x)) return toast(`Your role cannot delete a loan in status ${lpName(x.milestone)}.`); S.loanId = x.id; S.view = 'loan'; S.tab = 'overview'; P.sel = []; render(); setTimeout(() => document.querySelector('[data-laact="delete"]')?.click(), 30); return; }
+  if (d.lpm) { RC.cache = {}; lpRe(); return toast('Pipeline refreshed'); }
+  if (d.lppage) { P.page = Math.max(0, P.page + +d.lppage); return lpRe(); }
+  if (d.lpexport) { const { rows } = lpPipeRows(); const lim = lpLimits(); return lpCsv(`pipeline-${lpTodayISO()}.csv`, [['Loan #', 'Status', 'Borrower', 'Email', 'Phone', 'Property', 'City', 'State', 'ZIP', 'Purpose', 'Occupancy', 'Loan type', 'Credit score', 'Amount', 'Note rate', 'LTV', 'CLTV', 'DTI front', 'DTI back', 'Loan officer', 'Lender', 'Channel', 'Campaign'],
+    ...rows.map((x) => { const f = lpFig(x); return [x.id, lpName(x.milestone), x.borrower, f.email, f.phone, f.street, f.city, f.state, f.zip, x.purpose, x.occ, PROGRAM[x.program] || x.program, f.score || '', f.amount, f.rate, f.ltv, f.cltv, f.front, f.back, x.lo, x.lenderName || '', extras(x).addl.channel || 'Broker', extras(x).addl.campaign || 'Default']; })]); }
+  if (d.lpftog) { S.lpFOpen = !S.lpFOpen; return lpRe(); }
+  if (d.lpsearch) { lpReadFilters(); S.lpFOpen = false; return lpRe(); }
+  if (d.lpreset) { P.f = {}; P.page = 0; return lpRe(); }
+  if (d.lpsaveview) { lpReadFilters(); const name = `My view ${(S.cfg.pviews || []).length + 1}`; S.cfg.pviews = S.cfg.pviews || []; const id = 'v' + Date.now(); S.cfg.pviews.push({ id, name, f: { ...P.f }, roles: [] }); P.view = id; P.f = {}; save(); lpRe(); return toast(`Saved as "${name}" — rename or limit to roles in Settings › Pipeline › Views`); }
+  if (d.lpnotes) return lpNotesModal(loan(d.lpnotes));
+  if (d.lpqnote) { const x = loan(d.lpqnote); const t = ($('#lpq-n')?.value || '').trim(); if (!t) return toast('Write the note first.'); lpAddNote(x, t, 'internal', false); $('#layer').innerHTML = ''; return lpRe(); }
+  if (d.lpdd) { S.lpDD = S.lpDD === d.lpdd ? null : d.lpdd; return lpRe(); }
+  if (d.lpppe) { S.lpDD = null; const p = LP_PPE.find((x) => x[0] === d.lpppe); if (p && p[2] && typeof T[p[2]] === 'function') { S.tab = p[2]; render(); return window.scrollTo(0, 0); } lpRe(); return toast(`${p ? p[1] : 'This pricing engine'} is not connected yet — add it in Settings › Integrations when the contract is in place.`); }
+  if (d.lpjump) { const [t, ...rest] = d.lpjump.split('|'); return lpJump(t, rest.join('|')); }
+  if (d.lpback) { history.length > 1 ? history.back() : (S.view = 'pipeline', render()); return; }
+  if (d.lpavm) return toast('No AVM vendor is connected. Order it from Actions once a vendor is set up; nothing was ordered.');
+  if (d.lpfmt) { const ta = $('#nt-b'); if (!ta) return; const s = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(s, en) || 'text'; const m = d.lpfmt; ta.setRangeText(m === '- ' ? '\n- ' + sel : m + sel + m, s, en, 'end'); ta.focus(); return; }
+  if (d.lpaddnote && l) { const t = ($('#nt-b')?.value || '').trim(); if (!t) return toast('Write the note first.'); lpAddNote(l, t, $('#nt-v')?.value || 'internal', !!$('#nt-pin')?.checked); return lpRe(); }
+  if (d.lppin && l) { const n = extras(l).notes[+d.lppin]; if (n) { n.pin = !n.pin; save(); lpRe(); } return; }
+  if (d.lpauditcsv && l) { const rows = [...document.querySelectorAll('#app .tw table tbody tr')].map((tr) => [...tr.children].map((td) => td.textContent.trim())); return lpCsv(`${l.id}-audit.csv`, [['When', 'Who', 'Category', 'What', 'Old → New'], ...rows]); }
+  if (d.lpaudreset) { S.lpAud = { q: '', cat: '', range: '', from: '', to: '' }; return lpRe(); }
+  if (d.lpdocfinal && l) { if (!lpCan('loans.finalize_documents', l)) return; const m = extras(l).docMeta[d.lpdocfinal] = extras(l).docMeta[d.lpdocfinal] || {}; m.final = !m.final; m.finalAt = m.final ? fmtD(lpToday()) : ''; m.finalBy = lpMe(); S.lpDocOpen = true; save(); lpRe(); return toast(m.final ? 'Document finalized and locked' : 'Document reopened'); }
+  if (d.lpdocren && l) { const doc = l.docs[d.lpdocren]; S.lpDocOpen = true; laModal('Rename document', `<label for="lpren">New name<input id="lpren" value="${esc(doc.t)}"></label>`, `<button class="btn pri" data-lpdocrenok="${esc(d.lpdocren)}">Rename</button>`); return; }
+  if (d.lprole) { S.lpRole = d.lprole; return lpRe(); }
+  if (d.lproletab) { S.lpRoleTab = d.lproletab; return lpRe(); }
+  if (d.lpgrant) { const [g, on] = d.lpgrant.split('|'); const D = lpRolesData(); return lpSetPerms((D.catalog || []).filter((p) => p.grp === g).map((p) => ({ perm: p.code, granted: on === '1' && true, cond: on === '1' ? (lpRoleCur()?.perms?.[p.code]?.cond || {}) : {} })).filter((c) => !(lpRoleCur()?.code === 'system_administrator' && on === '0' && ['settings.roles', 'settings.users'].includes(c.perm)))); }
+  if (d.lprolesave) { const cur = lpRoleCur(); const p = { id: cur.id, name: $('#lpr-name')?.value, description: $('#lpr-desc')?.value };
+    if (rcLive()) return lpRbacWrite('rbac_save_role', { p_org: rcOrg(), p }, 'Role saved'); const R = lpRbacLocal().roles.find((r) => r.id === cur.id); if (!R.is_system && p.name) R.name = p.name; R.description = p.description; save(); lpRe(); return toast('Role saved'); }
+  if (d.lproleadd) { const name = ($('#lpr-new')?.value || '').trim(); if (!name) return toast('Give the role a name.'); const from = $('#lpr-copy')?.value;
+    if (rcLive()) return lpRbacWrite('rbac_save_role', { p_org: rcOrg(), p: { name, copy_from: from } }, `Role "${name}" added`);
+    const src = lpRbacLocal().roles.find((r) => r.id === from); const id = 'custom_' + Date.now(); lpRbacLocal().roles.push({ ...JSON.parse(JSON.stringify(src || {})), id, code: id, name, is_system: false, consumer: false }); S.lpRole = id; save(); lpRe(); return toast(`Role "${name}" added`); }
+  if (d.lpstreset) { S.cfg.lpStatus = []; save(); lpRe(); return toast('Statuses reset to default'); }
+  if (d.lpvdel) { S.cfg.pviews.splice(+d.lpvdel, 1); save(); return lpRe(); }
+  if (d.lpswrole) { S.tbOpen = null; const sel = document.getElementById('role'); if (sel) { sel.value = d.lpswrole; sel.dispatchEvent(new Event('change', { bubbles: true })); } return; }
+  if (d.lpreload) { S.tbOpen = null; RC.cache = {}; if (rcLive()) return window.GN_LIVE.flush().then(() => location.reload()); save(); return location.reload(); }
+});
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-lpdocrenok]'); if (!b || !S.loanId) return; const l = loan(S.loanId); const k = b.dataset.lpdocrenok; const v = ($('#lpren')?.value || '').trim(); if (!v) return; const doc = l.docs[k]; const m = extras(l).docMeta[k] = extras(l).docMeta[k] || {}; if (!m.renamedFrom) m.renamedFrom = doc.t; doc.t = v; $('#layer').innerHTML = ''; save(); lpRe(); toast('Renamed'); });
+// mentions in the notification bell open the loan's notes
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-go^="loan:"]'); if (!b) return; e.preventDefault(); e.stopImmediatePropagation(); const id = b.dataset.go.slice(5); (S.lpMentions || []).forEach((m) => { if (m.loan === id && m.to === lpMe()) m.read = true; }); S.tbOpen = null; S.loanId = id; S.view = 'loan'; S.tab = 'notes'; save(); render(); }, true);
+function lpAddNote(l, body, vis, pin) {
+  const x = extras(l); x.notes = x.notes || []; const who = lpMe() || 'User'; x.notes.push({ who, at: now(), body, vis, pin, mentions: [] });
+  const names = lpPeople().filter((p) => body.includes('@' + p)); S.lpMentions = S.lpMentions || []; for (const p of names) S.lpMentions.push({ to: p, by: who, loan: l.id, at: now(), read: false });
+  save(); toast(names.length ? `Note added · ${names.join(', ')} notified in the bell` : 'Note added');
+}
+document.addEventListener('change', (e) => {
+  const t = e.target; const d = t.dataset || {}; const P = lpPipeState(); const l = S.loanId ? loan(S.loanId) : null;
+  if (d.lprecentn) { S.lpRecentN = +t.value; return lpRe(); }
+  if (d.lpauto) { S.lpAuto = t.checked; save(); lpAutoRefresh(); return toast(t.checked ? 'Auto refresh every minute' : 'Auto refresh off'); }
+  if (d.lpview) { P.view = t.value; P.f = {}; P.page = 0; return lpRe(); }
+  if (d.lpsort) { P.sort = t.value; return lpRe(); }
+  if (d.lpsize) { P.size = +t.value; P.page = 0; return lpRe(); }
+  if (d.lpsel) { P.sel = t.checked ? [...new Set([...P.sel, d.lpsel])] : P.sel.filter((x) => x !== d.lpsel); return lpRe(); }
+  if (d.lpstatus && l) { if (!lpCan('loans.change_status', l)) return toast('Your role cannot change the status.'); const from = l.milestone; l.milestone = t.value; l.events = l.events || []; l.events.push({ s: `Status: ${lpName(from)} → ${lpName(t.value)}`, who: lpMe(), at: now() }); save(); lpRe(); return toast(`Status changed to ${lpName(t.value)}`); }
+  if (d.lpswitch) { S.loanId = t.value; S.lpQ = ''; render(); return window.scrollTo(0, 0); }
+  if (d.lpmention) { const ta = $('#nt-b'); if (ta && t.value) { ta.setRangeText('@' + t.value + ' ', ta.selectionStart, ta.selectionEnd, 'end'); ta.focus(); } t.value = ''; return; }
+  if (d.lpaud) { const A = S.lpAud = S.lpAud || {}; A[d.lpaud] = t.value; if (d.lpaud === 'range' && t.value) { A.from = ''; A.to = ''; } return lpRe(); }
+  if (d.lpdocf) { S.lpDocF[d.lpdocf] = t.value; S.lpDocOpen = true; return lpRe(); }
+  if (d.lpdocportal && l) { const m = extras(l).docMeta[d.lpdocportal] = extras(l).docMeta[d.lpdocportal] || {}; m.portal = t.checked; S.lpDocOpen = true; save(); return toast(t.checked ? 'Visible to the borrower in the portal' : 'Hidden from the borrower'); }
+  if (d.lpdocmove && l && t.value) { l.docs[d.lpdocmove].f = t.value; S.lpDocOpen = true; save(); lpRe(); return toast('Moved to ' + t.value); }
+  if (d.lpperm) { const cur = lpRoleCur(); return lpSetPerms([{ perm: d.lpperm, granted: t.checked, cond: t.checked ? (cur?.perms?.[d.lpperm]?.cond || {}) : {} }]); }
+  if (d.lpcond) { const [perm, st] = d.lpcond.split('|'); const cur = lpRoleCur(); const v = cur?.perms?.[perm] || {}; const list = new Set(v.cond?.status_in || []); t.checked ? list.add(st) : list.delete(st); return lpSetPerms([{ perm, granted: true, cond: list.size ? { status_in: [...list] } : {} }]); }
+  if (d.lprolelist) { const [k, v] = d.lprolelist.split('|'); const cur = lpRoleCur(); const arr = new Set(cur[k] || []); t.checked ? arr.add(v) : arr.delete(v);
+    if (rcLive()) return lpRbacWrite('rbac_save_role', { p_org: rcOrg(), p: { id: cur.id, [k]: [...arr] } }, 'Saved'); const R = lpRbacLocal().roles.find((r) => r.id === cur.id); R[k] = [...arr]; save(); return; }
+  if (d.lpassign) { const roleId = t.value; if (rcLive()) return lpRbacWrite('rbac_assign', { p_org: rcOrg(), p_user: d.lpassign, p_role: roleId }, 'Role assigned');
+    const R = lpRbacLocal(); const code = R.roles.find((r) => r.id === roleId)?.code; R.members[d.lpassign] = [code]; save(); lpRe(); return toast('Role assigned'); }
+  if (d.lpst) { const [i, k] = d.lpst.split('|'); const s = lpStatuses()[+i]; s[k] = k === 'on' ? t.checked : t.value; save(); return; }
+  if (d.lplim) { const [k, q] = d.lplim.split('|'); lpLimits()[k][q] = +t.value; save(); return; }
+  if (d.lpsat) { S.cfg.lpSaturdays = t.checked; save(); return; }
+  if (d.lpvname) { const v = S.cfg.pviews[+d.lpvname]; if (v && t.value.trim()) { v.name = t.value.trim(); save(); } return; }
+  if (d.lpvrole) { const [i, r] = d.lpvrole.split('|'); const v = S.cfg.pviews[+i]; const set = new Set(v.roles || []); t.checked ? set.add(r) : set.delete(r); v.roles = [...set]; save(); return; }
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'lp-q') { S.lpQ = e.target.value; const pos = e.target.selectionStart; lpRe(); const n = document.getElementById('lp-q'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }
+  else if (e.target.dataset?.lpaud === 'q' || e.target.dataset?.lpdocf === 'q') { clearTimeout(lpRe.t); const k = e.target.dataset.lpaud ? 'aud' : 'doc'; const v = e.target.value; lpRe.t = setTimeout(() => { if (k === 'aud') S.lpAud.q = v; else { S.lpDocF.q = v; S.lpDocOpen = true; } lpRe(); const n = document.querySelector(k === 'aud' ? '[data-lpaud="q"]' : '[data-lpdocf="q"]'); if (n) { n.focus(); n.setSelectionRange(v.length, v.length); } }, 350); }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.target.id === 'lp-q' && e.key === 'Enter') { const first = document.querySelector('[data-lpjump]'); if (first) { e.preventDefault(); first.click(); } }
+  if (e.key === 'Escape' && (S.lpDD || S.lpQ)) { S.lpDD = null; S.lpQ = ''; lpRe(); }
+  if (e.target.matches?.('[data-lpfv]') && e.key === 'Enter') { e.preventDefault(); document.querySelector('[data-lpsearch]')?.click(); }
+});
+// quick tour of the dashboard
+const LP_TOUR = [['.lpkpis', 'TRID and ECOA counters: each card opens the loans behind it.'], ['[data-lpw="recent"]', 'Last modified loans — newest first; choose how many to show.'], ['[data-lpw="active"]', 'Active pipeline by status. Click a status to open those loans.'], ['[data-lpw="funding"]', 'Funding history for the last 13 months.'], ['[data-lpcsv]', 'Every widget downloads as CSV.']];
+function lpTourStep() {
+  document.querySelectorAll('.lptourpop').forEach((x) => x.remove()); const s = LP_TOUR[S.lpTour]; if (!s) return; const el = document.querySelector(s[0]); if (!el) { S.lpTour++; return lpTourStep(); }
+  el.scrollIntoView({ block: 'nearest' }); const r = el.getBoundingClientRect(); const p = document.createElement('div'); p.className = 'lptourpop'; p.setAttribute('role', 'dialog');
+  p.innerHTML = `<p>${esc(s[1])}</p><div class="row"><span class="small muted">${S.lpTour + 1} / ${LP_TOUR.length}</span><button class="btn sm" data-lptourx="1">Close</button><button class="btn sm pri" data-lptournext="1">${S.lpTour === LP_TOUR.length - 1 ? 'Done' : 'Next'}</button></div>`;
+  p.style.top = Math.min(innerHeight - 140, r.bottom + 8) + 'px'; p.style.left = Math.max(8, Math.min(innerWidth - 300, r.left)) + 'px'; document.body.appendChild(p);
+}
+document.addEventListener('click', (e) => { if (e.target.closest('[data-lptournext]')) { S.lpTour++; lpTourStep(); } else if (e.target.closest('[data-lptourx]')) document.querySelectorAll('.lptourpop').forEach((x) => x.remove()); });
 
 // ================================================================ Layout: side menu only (no top menu), fixed side menu, dashboard that fits the screen
 // On a computer screen (wider than 1100px) the top menu links are hidden — the side menu has the same pages — and the

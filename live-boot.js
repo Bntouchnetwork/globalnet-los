@@ -8,6 +8,9 @@
   const PROG_TO_DB = { conventional: 'conventional', fha: 'fha', va: 'va', usda: 'usda', jumbo: 'jumbo', dscr: 'non_qm_dscr', bank: 'non_qm_bank_statement', pnl: 'non_qm_pnl', asset: 'non_qm_asset_utilization', fn: 'non_qm_foreign_national', itin: 'non_qm_itin' };
   const PROG_FROM_DB = Object.fromEntries(Object.entries(PROG_TO_DB).map(([a, b]) => [b, a]));
   const MS_TO_DB = { Lead: 'lead', 'Pre-qualification': 'lead', 'Pre-approval': 'lead', Application: 'application', Processing: 'processing', Submitted: 'submitted', 'Conditional Approval': 'conditional_approval', Approved: 'conditional_approval', Suspended: 'conditional_approval', 'Clear to Close': 'clear_to_close', 'Docs Out': 'closing', Closed: 'closing', Funded: 'funded', 'Post-Closing': 'post_closing', Withdrawn: 'withdrawn', Cancelled: 'withdrawn', Denied: 'denied' };
+  Object.assign(MS_TO_DB, { Prospect: 'lead', Registered: 'application', 'Broker Initial Submission': 'submitted', 'Purchase Review': 'conditional_approval', 'Purchase Suspense': 'conditional_approval', 'Pre-Deny': 'conditional_approval',
+    'Broker Condition Submission': 'conditional_approval', 'Condition Submission': 'conditional_approval', 'Clear To Purchase': 'clear_to_close', 'Not Accepted': 'withdrawn', Incomplete: 'withdrawn', Rescinded: 'withdrawn',
+    'Purchased From Seller': 'funded', 'Post Closing': 'post_closing', 'In Shipping': 'post_closing', Purchased: 'post_closing', Servicing: 'post_closing' });   // LendingPad-style statuses → database milestone
   const MS_FROM_DB = { lead: 'Lead', application: 'Application', processing: 'Processing', submitted: 'Submitted', conditional_approval: 'Conditional Approval', clear_to_close: 'Clear to Close', closing: 'Docs Out', funded: 'Funded', post_closing: 'Post-Closing', withdrawn: 'Withdrawn', denied: 'Denied' };
   const PUR_TO_DB = (p) => /cash/i.test(p) ? 'cash_out_refinance' : /refi/i.test(p) ? 'refinance' : /constr/i.test(p) ? 'construction' : /purchase/i.test(p) ? 'purchase' : 'other';
   const PUR_FROM_DB = { purchase: 'Purchase', refinance: 'Refinance', cash_out_refinance: 'Cash-out refinance', construction: 'Construction', other: 'Other' };
@@ -28,7 +31,7 @@
     const l = base ? { ...base } : { borrower: name || 'New borrower', program: 'conventional', purpose: 'Purchase', occ: 'Primary', city, amount: 0, price: null, appraised: null, rate: 6.875, term: 360, taxes: 0, ins: 0, hoa: 0,
       income: 0, debts: 0, assets: 0, closing: 0, prepaids: 0, earnest: 0, milestone: 'Application', close: '—', lo: 'Cristiano O.', docs: {}, events: [{ s: 'Loan created', who: 'GlobalNet LOS', at: fmtDate(row.created_at.slice(0, 10)) }], submissions: [], assignment: null, tasks: [], notes: [] };
     Object.assign(l, { id: row.loan_number, dbId: row.id, program: PROG_FROM_DB[row.program] || l.program || 'conventional', purpose: base && PUR_TO_DB(base.purpose) === row.purpose ? base.purpose : PUR_FROM_DB[row.purpose] || 'Purchase',
-      occ: base && OCC_TO_DB(base.occ) === row.occupancy ? base.occ : OCC_FROM_DB[row.occupancy] || 'Primary', milestone: keepMs ? base.milestone : MS_FROM_DB[msDb] || 'Application',
+      occ: base && OCC_TO_DB(base.occ) === row.occupancy ? base.occ : OCC_FROM_DB[row.occupancy] || 'Primary', milestone: keepMs ? base.milestone : row.status && MS_TO_DB[row.status] === msDb ? row.status : MS_FROM_DB[msDb] || 'Application', createdAt: row.created_at,
       amount: num(row.loan_amount) ?? l.amount ?? 0, price: num(row.purchase_price) ?? l.price ?? null, appraised: num(row.appraised_value) ?? l.appraised ?? null, rate: num(row.interest_rate) ?? l.rate, term: row.term_months || l.term || 360,
       taxes: num(row.monthly_taxes) ?? l.taxes ?? 0, ins: num(row.monthly_insurance) ?? l.ins ?? 0, hoa: num(row.monthly_hoa) ?? l.hoa ?? 0, city: row.property_city || row.property_state ? city : l.city,
       close: row.estimated_closing_date ? fmtDate(row.estimated_closing_date) : l.close || '—', lenderName: row.lender_name || l.lenderName, businessPurpose: !!row.business_purpose });
@@ -37,7 +40,7 @@
   }
   function coreOf(l) {
     const [cty, st] = String(l.city || '').split(',').map((x) => x.trim()); const x = l.x || {}; const dt = x.dates || {};
-    return { program: PROG_TO_DB[l.program] || 'conventional', purpose: PUR_TO_DB(l.purpose || ''), occupancy: OCC_TO_DB(l.occ || ''), milestone: MS_TO_DB[l.milestone] || 'application',
+    return { program: PROG_TO_DB[l.program] || 'conventional', purpose: PUR_TO_DB(l.purpose || ''), occupancy: OCC_TO_DB(l.occ || ''), milestone: MS_TO_DB[l.milestone] || 'application', status: l.milestone || null, deleted_at: null,
       loan_amount: num(l.amount), purchase_price: num(l.price), appraised_value: num(l.appraised), interest_rate: num(l.rate), term_months: num(l.term) || 360,
       monthly_taxes: num(l.taxes) || 0, monthly_insurance: num(l.ins) || 0, monthly_hoa: num(l.hoa) || 0,
       property_city: cty && cty !== 'TBD' ? cty : null, property_state: st && /^[A-Za-z]{2}$/.test(st) ? st.toUpperCase() : null,
@@ -68,7 +71,10 @@
         }
         snap.loans[key] = prev;
       }
-      // removed loans (deleted in the LOS): the database keeps them; the screen hides them
+      // removed loans (deleted in the LOS): the database keeps them, marked deleted (the permission is checked there); the screen hides them
+      for (const d of S.deleted || []) { const key = d.loan && d.loan.dbId; if (!key || d.dbMarked) continue;
+        const { error } = await sb.from('loans').update({ deleted_at: new Date().toISOString(), deleted_reason: d.reason || null }).eq('id', key);
+        if (error) { toast(`${d.loan.id} could not be deleted: ${error.message}`); const i = S.deleted.indexOf(d); if (i >= 0) { S.deleted.splice(i, 1); S.loans.unshift(d.loan); } } else { d.dbMarked = true; if (snap.loans[key]) snap.loans[key].core = ''; } }
       const orgData = { S: { ...S, loans: [], loanId: null, panel: false, layer: null } };
       const orgJson = JSON.stringify(orgData);
       if (orgJson !== snap.org) { const { error } = await sb.from('org_app_state').upsert({ org_id: G.orgId, data: orgData }); if (error) console.warn('org state', error.message); else snap.org = orgJson; }
@@ -102,8 +108,8 @@
         sb.from('disclosure_library').select('code, docmagic_form_id, propel_form_id').eq('active', true)]);
       if (le) throw new Error(le.message);
       const uiBy = Object.fromEntries((ui || []).map((u) => [u.loan_id, u])); const borBy = Object.fromEntries((bor || []).map((b) => [b.loan_id, b]));
-      const realLoans = (rows || []).map((r) => toPreview(r, uiBy[r.id], borBy[r.id]));
-      rows?.forEach((r) => { const l = realLoans.find((x) => x.dbId === r.id); snap.loans[r.id] = { core: JSON.stringify(coreOf(l)), ui: uiBy[r.id] ? JSON.stringify(uiBy[r.id].data) : '', borrower: borBy[r.id] ? l.borrower : '' }; });
+      const realLoans = (rows || []).filter((r) => !r.deleted_at).map((r) => toPreview(r, uiBy[r.id], borBy[r.id]));
+      rows?.filter((r) => !r.deleted_at).forEach((r) => { const l = realLoans.find((x) => x.dbId === r.id); snap.loans[r.id] = { core: JSON.stringify(coreOf(l)), ui: uiBy[r.id] ? JSON.stringify(uiBy[r.id].data) : '', borrower: borBy[r.id] ? l.borrower : '' }; });
       G.firstRun = !org?.data?.S;
       try { localStorage.removeItem('gn-los-live'); if (!G.firstRun) localStorage.setItem('gn-los-live', JSON.stringify({ ...org.data.S, loans: realLoans, view: 'dashboard', loanId: null, layer: null, panel: false }) /* always open on the dashboard: the saved page may belong to another role */); localStorage.setItem('gn-los-role', G.uiRoles[0]); } catch {}
       G.realLoans = realLoans; G.status = 'ready';
